@@ -1,0 +1,9 @@
+CUSTOMER COMPLAINT REPORT #4822
+Date Logged: 2026-10-03 14:22 UTC
+Customer Name: Beta Retail
+Contact Person: Dave Miller (dave@betaretail.example)
+Account Reference: BETA-STR-042
+Severity Reported: Minor UI Bug
+Details:
+Small UI alignment glitch on our mobile checkout button. Not urgent, just flagging
+for the next regular maintenance sprint.

@@ -1,0 +1,10 @@
+CUSTOMER COMPLAINT REPORT #4821
+Date Logged: 2026-10-02 09:14 UTC
+Customer Name: Acme Corp
+Contact Person: Sarah Jenkins (VP Operations, sjenkins@acme.com)
+Account Reference: ACME-ENT-001
+Severity Reported: Critical Outage
+Details:
+We are experiencing severe database synchronization outages across our EU servers
+affecting hundreds of our enterprise users. Our internal analytics have completely stalled.
+Need urgent resolution and senior engineering support immediately.

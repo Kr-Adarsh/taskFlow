@@ -102,6 +102,14 @@ class PythonCapability:
             result = {'ok': False, 'error': f'{type(error).__name__}: {str(error)[:1200]}', 'error_code': 'CODE_REJECTED', 'category': 'PYTHON_CONTRACT_ERROR'}
         self.failed_programs.setdefault(scope, {})[code_hash] = result.get('category', result.get('error_code', 'PYTHON_RUNTIME_ERROR'))
         result.update(budget)
+        if result.get('error_code') == 'PYTHON_RESULT_ERROR':
+            result['repair_guidance'] = {
+                'scope': 'result_format',
+                'instruction': 'Fix the reported output-format defect while preserving the original objective, '
+                               'input selection, aggregation, periods, direction, units and ranking. '
+                               'Named tables must be pandas DataFrames, not lists of records. '
+                               'Do not add abs() or otherwise change a directional calculation to fix table serialization.',
+            }
         shutil.rmtree(destination, ignore_errors=True)
         return ToolResult(ok=False, data=result, error=result['error'], error_code=result.get('error_code', 'PYTHON_RUNTIME_ERROR'),
                           evidence=budget)

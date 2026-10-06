@@ -90,7 +90,7 @@ class VerificationIntent(StrictModel):
     company: Optional[str] = Field(default=None, description="Exact company named in the original objective, including all suffixes/numbers; null if no company is named. Never abbreviate identity.")
     selection: Literal["latest", "specific", "unresolved"] = Field(default="specific", description="latest for a latest-source request; specific for an explicitly identified source; unresolved for another unsupported rule")
     invoice_number: Optional[str] = None
-    complaint_id: Optional[str] = None
+    complaint_id: Optional[str] = Field(default=None, description="Exact source identifier named in the original request for a source-linked ticket, including a complaint number when provided. Reading the source and extracting its customer are supported evidence checks. Required for tickets even when the source is mentioned in a procedural clause.")
     priority: Optional[str] = Field(default=None, pattern=r"^(High|Medium|Low)$")
     condition_tier: Optional[str] = Field(default=None, description="Exact CRM tier required by a conditional ticket-creation request; null for unconditional creation. CRM tier lookup is supported.")
     require_new_record: bool = True

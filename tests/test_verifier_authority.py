@@ -170,16 +170,15 @@ async def test_supported_families_preserve_arbitrary_diagnostics_without_claimin
 
 @pytest.mark.parametrize('intent,outcome', [
     (VerificationIntent(collection='unsupported', unsupported_criteria=['Sending external email']), 'FATAL_FAILURE'),
-    (VerificationIntent.model_construct(collection='contacts'), 'FATAL_FAILURE'),
-    (VerificationIntent(collection='invoices', company='Acme Corp', selection='unresolved'), 'AMBIGUITY'),
-    (VerificationIntent(collection='tickets'), 'AMBIGUITY'),
+    (VerificationIntent(collection='invoices', company='Acme Corp', selection='unresolved'), 'FATAL_FAILURE'),
+    (VerificationIntent(collection='tickets'), 'FATAL_FAILURE'),
     (VerificationIntent(collection='tickets', complaint_id='4821', requested_fields=['mrr']), 'FATAL_FAILURE'),
 ])
 async def test_unusable_interpretation_stops_graph_without_executor_retry(workspace, intent, outcome, monkeypatch):
     objective = 'Resolve the requested outcome'
     plan = {'objective': objective, 'success_criteria': [objective], 'tasks': [{
         'task_id': 'outcome', 'goal': objective, 'success_criteria': [objective], 'verification_capability': 'browser'}]}
-    provider = SchemaProvider([plan, {'thought': 'Request independent verification', 'action': 'ready_for_verification'}, intent])
+    provider = SchemaProvider([plan, {'thought': 'Request independent verification', 'action': 'ready_for_verification'}, intent, deepcopy(intent)])
     events = []
     runner = AgentRunner(provider=provider, db_path=workspace,
         event_callback=lambda _, kind, payload: events.append((kind, payload)))
@@ -189,7 +188,7 @@ async def test_unusable_interpretation_stops_graph_without_executor_retry(worksp
     assert result['status'] == ('waiting_for_clarification' if outcome == 'AMBIGUITY' else 'failed')
     assert next(payload for kind, payload in events if kind == 'VERIFICATION')['outcome'] == outcome
     assert result['steps'] == 1 and result['report']['tasks'][0]['verification_attempts'] == 1
-    assert provider.schemas == ['TaskPlan', 'Decision', 'VerificationIntent'] and not provider.responses
+    assert provider.schemas == ['TaskPlan', 'Decision', 'VerificationIntent', 'VerificationIntent'] and not provider.responses
     assert runner.capability_verifier.browser.intent is None
     assert runner.capability_verifier.browser._intent_objective is None
     ticket_check.assert_not_awaited()
@@ -205,9 +204,9 @@ async def test_unusable_intent_is_not_cached_as_a_reusable_interpretation(worksp
     valid = frozen_intent()
     provider = SchemaProvider([deepcopy(intent), valid])
     verifier = VerifierEngine(workspace, provider=provider)
-    assert await verifier.interpret('Unchanged objective', []) == intent
-    assert verifier.intent is None and verifier._intent_objective is None
     assert await verifier.interpret('Unchanged objective', []) == valid
+    assert verifier.interpretation_attempts[0]['admitted'] is False
+    assert verifier.interpretation_attempts[1]['admitted'] is True
     assert verifier.intent == valid
     assert await verifier.interpret('Unchanged objective', ['Different planner wording']) == valid
     assert provider.schemas == ['VerificationIntent', 'VerificationIntent']
@@ -234,3 +233,10 @@ async def test_missing_ticket_is_recoverable_and_workspace_change_reuses_valid_i
     assert provider.schemas == ['VerificationIntent', 'SummaryAssessment'] and not provider.responses
     assert runner.capability_verifier.browser.intent == frozen_intent()
     assert task.verification_attempts == 2
+
+
+def test_unknown_constructed_collection_is_rejected_before_application_checks():
+    from backend.app.agent.verifier import InterpretationFailure
+    with pytest.raises(InterpretationFailure) as error:
+        VerifierEngine._validate_intent(VerificationIntent.model_construct(collection='contacts'))
+    assert error.value.outcome == 'FATAL_FAILURE'

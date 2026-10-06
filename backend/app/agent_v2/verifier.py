@@ -2,6 +2,7 @@
 import json
 import re
 from backend.app.agent.prompts import DATA_BOUNDARY
+from backend.app.agent.interpretation import ContractInterpretationError, interpret_contract
 from backend.app.agent.verifier import VerifierEngine, snapshot_state, read_sources, state_delta
 from backend.app.agent_v2.state import Verification, AnswerAssessment, CoverageAssessment
 from backend.app.capabilities.documents import chunks
@@ -67,7 +68,7 @@ class CapabilityVerifier:
     async def verify_computation(self, objective, task, pre_state, after, memory, python_result):
         import hashlib
         import math
-        from backend.app.capabilities.python.verification import CalculationContract, calculate
+        from backend.app.capabilities.python.verification import calculation_schema, calculate, validate_calculation_contract
         from backend.app.capabilities.python.profile import context_profile
         from backend.app.capabilities.documents import resolve_file
         from backend.app.capabilities.python.sandbox import artifact_root
@@ -89,14 +90,13 @@ class CapabilityVerifier:
             actual = python_result['metrics']
             if task.result.get('metrics') != actual:
                 raise ValueError('Final answer metrics differ from the full execution result')
-            contract, _ = await self.provider.generate_structured([
-                {'role': 'system', 'content': DATA_BOUNDARY + '\nIndependently specify a deterministic grouped numeric aggregation or period comparison from the ORIGINAL objective and dataset schema. Never use executor values as expected answers. Preserve sum/mean/count/min/max, absolute versus percent change, baseline/current periods, direction and requested min/max selection. Choose metric keys from the output schema only. All original requirements must fit this contract; otherwise list unsupported_requirements. JSON schema: ' + json.dumps(CalculationContract.model_json_schema())},
+            input_ids = {source['document_id'] for source in python_result['inputs']}
+            response_schema = calculation_schema(objective, input_ids, actual.keys())
+            contract, interpretation_attempts = await interpret_contract(self.provider, [
+                {'role': 'system', 'content': DATA_BOUNDARY + '\nIndependently specify a deterministic grouped numeric aggregation or period comparison from the ORIGINAL objective and dataset schema. Never use executor values as expected answers. Return every schema field explicitly; comparison periods and convention have no implicit defaults. Preserve sum/mean/count/min/max, original-unit versus percent change, baseline/current periods, direction and requested min/max selection. A largest absolute decline means the positive amount lost: baseline_minus_current difference with max selection. This supported comparison does not take absolute values across both growth and decline. Choose metric keys from the output schema only. All original requirements must fit this contract; otherwise list unsupported_requirements. JSON schema: ' + json.dumps(response_schema.model_json_schema())},
                 {'role': 'user', 'content': json.dumps({'original_objective': objective, 'dataset_profiles': {key: context_profile(profile, objective) for key, profile in profiles.items()}, 'metric_keys': list(actual)})},
-            ], CalculationContract)
-            if contract.unsupported_requirements:
-                raise ValueError('Unsupported calculation requirements: ' + '; '.join(contract.unsupported_requirements))
-            if contract.document_id not in {source['document_id'] for source in python_result['inputs']}:
-                raise ValueError('Verification input was not used by the computation')
+            ], response_schema, lambda contract: validate_calculation_contract(
+                contract, objective, profiles, input_ids, actual.keys()))
             expected = calculate(contract)
             value = actual.get(contract.value_metric)
             passed = (not isinstance(value, bool) and isinstance(value, (int, float)) and math.isfinite(value)
@@ -104,8 +104,13 @@ class CapabilityVerifier:
                       and str(actual.get(contract.group_metric)) == expected['group'] and no_mutations(pre_state, after))
             return Verification(outcome='PASS' if passed else 'RECOVERABLE_FAILURE', verified=passed,
                 summary='Full-data calculation and output artifacts independently checked.' if passed else 'Computed result differs from the independent full-data calculation.',
-                evidence={'contract': contract.model_dump(), 'expected': expected, 'actual': actual, 'artifacts': python_result.get('artifacts', []), 'state_delta': state_delta(pre_state, after)},
+                evidence={'contract': contract.model_dump(), 'interpretation_attempts': interpretation_attempts,
+                          'expected': expected, 'actual': actual, 'artifacts': python_result.get('artifacts', []), 'state_delta': state_delta(pre_state, after)},
                 discrepancies=[] if passed else ['The selected group or calculated measure does not match an independent full-data check; review aggregation, periods, units and direction.'])
+        except ContractInterpretationError as error:
+            return Verification(outcome='FATAL_FAILURE', verified=False, summary=str(error),
+                evidence={'interpretation_failure': {'origin': 'verifier_interpretation', 'code': 'VERIFICATION_CONTRACT_INVALID'},
+                          'interpretation_attempts': error.attempts, 'state_delta': state_delta(pre_state, after)})
         except (ValueError, KeyError, OSError) as error:
             return Verification(outcome='AMBIGUITY', verified=False, summary=str(error))
 

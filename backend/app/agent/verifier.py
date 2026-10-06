@@ -7,6 +7,7 @@ import re
 
 from backend.app.agent.provider import get_default_provider, LLMProvider
 from backend.app.agent.prompts import DATA_BOUNDARY
+from backend.app.agent.interpretation import ContractInterpretationError, interpret_contract, required_response_schema
 from backend.app.agent.schemas import CriterionResult, VerificationResult, VerificationIntent, SummaryAssessment
 from backend.app.workspace.db import get_db_connection
 from backend.app.workspace.service import list_documents, extract_document_text
@@ -97,6 +98,7 @@ class VerifierEngine:
         self.provider = provider or get_default_provider()
         self.intent = intent
         self._intent_objective = None
+        self.interpretation_attempts = []
         self.pre_state = snapshot_state(db_path)
 
     @staticmethod
@@ -133,20 +135,93 @@ class VerifierEngine:
                 return intent
             self._intent_objective = objective
             return self.intent
+        response_schema = self.generation_schema(objective)
         messages = [
             {"role": "system", "content": "Interpret only the original request into a verification contract; do not plan tool actions or judge whether execution succeeded. Preserve latest versus specific selection, exact named identity, requested priority and explicit conditions. Require a new record only when the request asks to create/enter/record one. The verifier can independently read source documents, CRM accounts, invoices and tickets, compare pre/post mutations and assess summary meaning. Supported checks include exact customer identity and CRM tier lookup, conditional creation/no-op for a requested tier, ticket priority/summary/source relationship, and invoice identity/source-date selection/payable amount/currency/due date. For a tier-dependent request, put the required tier in condition_tier; this is supported, not an unsupported criterion. Requested fields use exact stored names: company, invoice_number, currency, amount_minor, due_date, source_reference for invoices; customer, priority, summary, source_reference, tier for tickets. Read-only CRM account lookup uses collection accounts, company as the exact requested customer identity, require_new_record=false, and every requested field in requested_fields: customer_name, tier, mrr, account_manager, status. Account lookup is a supported outcome and always requires zero mutations. Source-linked identity, currency, payable amount and due date are required for invoice entry. Unsupported original-request requirements must appear in unsupported_criteria; missing execution evidence is assessed later. Do not invent unsupported requirements from planner suggestions. Planner criteria may clarify the original request but cannot add obligations or erase its conditions. Do not silently substitute a supported goal. JSON schema: " + json.dumps(VerificationIntent.model_json_schema())},
             {"role": "user", "content": json.dumps({"original_objective": objective, "planner_success_criteria": success_criteria})},
         ]
+        messages[0]['content'] = DATA_BOUNDARY + '\n' + messages[0]['content'].split(' JSON schema: ')[0] + (
+            ' Return every schema field explicitly; null is only for fields irrelevant to the selected collection '
+            'or genuinely unspecified in the original request. For tickets, complaint_id is the named source identifier, '
+            'priority is the requested priority, and condition_tier is the stated tier condition. '
+            'Reading a source and extracting its customer are supported checking steps. JSON schema: ' +
+            json.dumps(response_schema.model_json_schema()))
         self.intent = None
         self._intent_objective = None
-        intent, _ = await self.provider.generate_structured(messages, VerificationIntent)
+        self.interpretation_attempts = []
+        try:
+            intent, self.interpretation_attempts = await interpret_contract(
+                self.provider, messages, response_schema,
+                lambda intent: self._validate_requested_intent(intent, objective))
+        except ContractInterpretationError as error:
+            self.interpretation_attempts = error.attempts
+            raise
+        self.intent = VerificationIntent.model_validate(intent.model_dump())
+        self._intent_objective = objective
+        return self.intent
+
+    def requested_ticket_values(self, objective):
+        values = {}
+        identifiers = set(re.findall(r'\bcomplaint\s*[#:]?\s*(\d+)\b', objective, re.I))
+        if identifiers:
+            values['complaint_id'] = identifiers
+        priorities = {value for value in ('High', 'Medium', 'Low')
+                      if re.search(rf'\b{value}[-\s]+priority\b|\bpriority\s*[:=]?\s*{value}\b', objective, re.I)}
+        if priorities:
+            values['priority'] = priorities
+        if re.search(r'\b(if|only|unless)\b', objective, re.I):
+            tiers = {row['tier'] for row in snapshot_state(self.db_path)['accounts']
+                     if re.search(rf'\b{re.escape(row["tier"])}\b', objective, re.I)}
+            if tiers:
+                values['condition_tier'] = tiers
+        return values
+
+    def generation_schema(self, objective):
+        text = {'type': 'string', 'minLength': 1}
+        def branch(collection, fields):
+            properties = {'collection': {'type': 'string', 'enum': [collection]}, **fields}
+            return {'type': 'object', 'properties': properties, 'required': list(properties)}
+        ticket_fields = {'complaint_id': text}
+        for name, values in self.requested_ticket_values(objective).items():
+            ticket_fields[name] = {'type': 'string', 'enum': sorted(values)}
+        invoices = [branch('invoices', {'company': text, 'selection': {'type': 'string', 'enum': ['latest']}})]
+        latest = re.search(r'\b(?:latest|newest|most recent)\b', objective, re.I)
+        negated_latest = re.search(r"\b(?:not|never|except|excluding)\s+(?:the\s+)?(?:latest|newest|most recent)\b", objective, re.I)
+        if not latest or negated_latest:
+            invoices.append(branch('invoices', {'company': text, 'selection': {'type': 'string', 'enum': ['specific']}, 'invoice_number': text}))
+        properties = {}
+        writes = re.finditer(r'\b(?:create|enter)\b', objective, re.I)
+        positive_write = any(not re.search(r"(?:not|n't|never|without|avoid)(?:\s+\w+){0,2}\s+$",
+                                          objective[max(0, match.start()-40):match.start()], re.I)
+                             for match in writes)
+        if positive_write:
+            properties['require_new_record'] = {'type': 'boolean', 'enum': [True]}
+        return required_response_schema(VerificationIntent, properties=properties, branches=[*invoices,
+            branch('tickets', ticket_fields),
+            branch('accounts', {'company': text, 'requested_fields': {'type': 'array', 'minItems': 1}}),
+            branch('unsupported', {'unsupported_criteria': {'type': 'array', 'minItems': 1}})])
+
+    def _validate_requested_intent(self, intent, objective):
+        errors = []
         try:
             self._validate_intent(intent)
-        except InterpretationFailure:
-            return intent
-        self.intent = intent
-        self._intent_objective = objective
-        return intent
+        except InterpretationFailure as error:
+            errors.append(str(error))
+        if intent.collection != 'tickets':
+            if errors:
+                raise ValueError('; '.join(errors))
+            return
+        # These are explicit request literals, not facts inferred from the created row.
+        values = self.requested_ticket_values(objective)
+        for name, expected in values.items():
+            if expected != {getattr(intent, name)}:
+                errors.append(f'Preserve the explicitly requested {name}: {sorted(expected)}')
+        if re.search(r'\b(if|only|unless)\b', objective, re.I):
+            tiers = values.get('condition_tier')
+            if tiers and re.search(r'\bunless\b|\bif\b[^,.;]{0,100}\bnot\b', objective, re.I):
+                errors.append('A negated tier condition is not represented by this equality-only contract')
+        if errors:
+            raise ValueError('; '.join(errors))
 
     async def verify_run(self, objective: str, working_memory: dict, *, success_criteria: list[str] | None = None,
                          pre_state: dict | None = None, post_state: dict | None = None,
@@ -191,6 +266,11 @@ class VerifierEngine:
                 self._verify_account(intent, after, delta, reported_result or {}, check)
             else:
                 await self._verify_ticket(intent, sources, before, after, delta, check)
+        except ContractInterpretationError as error:
+            intent = error.contract
+            interpretation_failure = {'outcome': 'FATAL_FAILURE', 'reason': str(error),
+                                      'origin': 'verifier_interpretation', 'code': 'VERIFICATION_CONTRACT_INVALID'}
+            check('Verification interpretation is usable', False, discrepancy=str(error))
         except InterpretationFailure as error:
             interpretation_failure = {"outcome": error.outcome, "reason": str(error)}
             check("Verification interpretation is usable", False, discrepancy=str(error))
@@ -208,6 +288,7 @@ class VerifierEngine:
         return VerificationResult(verified=verified, summary=summary, criteria_results=checks, discrepancies=discrepancies,
             context={"original_objective": objective, "planner_success_criteria": success_criteria or [objective],
                      "interpreted_contract": intent.model_dump() if intent else None,
+                     "interpretation_attempts": self.interpretation_attempts,
                      "interpretation_diagnostics": diagnostics, "interpretation_failure": interpretation_failure})
 
     def _verify_account(self, intent, after, delta, reported_result, check):

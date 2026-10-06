@@ -166,7 +166,7 @@ async def test_latest_tie_rejected(workspace, tmp_path):
 
 @pytest.mark.anyio
 async def test_original_objective_and_criteria_reach_independent_interpreter(workspace):
-    provider = FakeProvider([VerificationIntent(collection="unsupported", unsupported_criteria=["Cannot update records"] )])
+    provider = FakeProvider([VerificationIntent(collection="unsupported", unsupported_criteria=["Cannot update records"] )] * 2)
     verifier = VerifierEngine(workspace, provider=provider)
     assert not (await verifier.verify_run("Change existing account", {}, success_criteria=["Account changed"])).verified
     assert "Change existing account" in str(provider.call_history)

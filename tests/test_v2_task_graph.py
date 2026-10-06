@@ -32,7 +32,8 @@ async def test_single_task_verifies_original_objective_without_coverage_call():
 
         async def generate_structured(self, messages, response_schema, temperature=0.0):
             assert self.expected_schemas, 'Unexpected extra verifier model call'
-            assert response_schema is self.expected_schemas.pop(0)
+            expected = self.expected_schemas.pop(0)
+            assert issubclass(response_schema, VerificationIntent) if expected is VerificationIntent else response_schema is expected
             return await super().generate_structured(messages, response_schema, temperature)
 
     provider = SingleTaskProvider(responses)

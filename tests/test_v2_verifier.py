@@ -23,7 +23,7 @@ class ContractProvider(FakeProvider):
 
     async def generate_structured(self, messages, response_schema, temperature=0.0):
         self.schemas.append(response_schema)
-        assert response_schema is VerificationIntent, 'Unexpected routing or coverage model call'
+        assert issubclass(response_schema, VerificationIntent), 'Unexpected routing or coverage model call'
         return await super().generate_structured(messages, response_schema, temperature)
 
 
@@ -64,7 +64,7 @@ async def test_persisted_invoice_reaches_intent_directly_and_interprets_once(wor
         result = await verifier.verify('Record the latest Acme Corp invoice', task, before, ContextMemory())
         assert result.verified, result
         assert result.evidence['state_delta'] == state_delta(before, snapshot_state())
-    assert provider.schemas == [VerificationIntent]
+    assert len(provider.schemas) == 1 and issubclass(provider.schemas[0], VerificationIntent)
     assert not provider.responses
 
 
@@ -99,7 +99,7 @@ async def test_account_lookup_is_read_only_and_exact(workspace):
     result = await CapabilityVerifier(provider).verify('Read the Acme Corp account fields', account_task(account_result()),
                                                        snapshot_state(), ContextMemory())
     assert result.verified
-    assert provider.schemas == [VerificationIntent]
+    assert len(provider.schemas) == 1 and issubclass(provider.schemas[0], VerificationIntent)
     checks = result.evidence['verification_result']['criteria_results']
     assert len([check for check in checks if check['criterion'].startswith('CRM ')]) == 5
 
@@ -169,7 +169,7 @@ async def test_conditional_ticket_noop_reaches_application_contract(workspace):
     assert any(check['evidence'].get('conditional_outcome') == 'no_op' for check in checks)
     persist_invoice()
     assert not (await verifier.verify('Create a ticket for complaint 4822 only if Enterprise', task, before, ContextMemory())).verified
-    assert provider.schemas == [VerificationIntent]
+    assert len(provider.schemas) == 1 and issubclass(provider.schemas[0], VerificationIntent)
 
 
 async def test_final_audit_rejects_state_changes_after_verification(workspace):
@@ -186,7 +186,7 @@ async def test_final_audit_rejects_state_changes_after_verification(workspace):
         connection.execute("UPDATE finance_invoices SET amount_minor=1 WHERE invoice_number='INV-1044'")
         connection.commit()
     assert not verifier.audit_mutations([task], before, snapshot_state()).verified
-    assert provider.schemas == [VerificationIntent]
+    assert len(provider.schemas) == 1 and issubclass(provider.schemas[0], VerificationIntent)
 
 
 @pytest.mark.parametrize('defect', ['currency', 'amount', 'due_date', 'source', 'duplicate', 'unwanted_mutation'])
@@ -213,4 +213,4 @@ async def test_browser_path_preserves_exact_invoice_rejections(workspace, defect
                    verification_capability='browser')
     result = await verifier.verify('Record latest invoice', task, before, ContextMemory())
     assert not result.verified
-    assert provider.schemas == [VerificationIntent]
+    assert len(provider.schemas) == 1 and issubclass(provider.schemas[0], VerificationIntent)

@@ -1,0 +1,20 @@
+[
+  {
+    "schema": {
+      "title": "VerificationIntent"
+    },
+    "response": {
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "{\"collection\":\"tickets\",\"company\":null,\"complaint_id\":\"4821\",\"condition_tier\":\"Enterprise\",\"priority\":\"High\",\"require_new_record\":true,\"requested_fields\":[\"customer\",\"priority\",\"summary\",\"source_reference\"],\"unsupported_criteria\":[\"Read complaint 4821 content\",\"Extract customer identity from complaint\"]}"
+          },
+          "logprobs": null,
+          "finish_reason": "stop"
+        }
+      ]
+    }
+  }
+]

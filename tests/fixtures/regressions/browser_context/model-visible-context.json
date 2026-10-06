@@ -1,0 +1,625 @@
+[
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {
+    "actual_serialized_task_data": {
+      "memory": {
+        "sources": {},
+        "pages": {
+          "http://127.0.0.1:41743/workspace/support": {
+            "source_url": "http://127.0.0.1:41743/workspace/support",
+            "current_url": "http://127.0.0.1:41743/workspace/support",
+            "interactive_elements": [
+              {
+                "id": "@tab_finance",
+                "tag": "a",
+                "type": "",
+                "label": "Finance",
+                "value": "/workspace/finance",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null
+              },
+              {
+                "id": "@tab_crm",
+                "tag": "a",
+                "type": "",
+                "label": "CRM",
+                "value": "/workspace/crm",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null
+              },
+              {
+                "id": "@tab_support",
+                "tag": "a",
+                "type": "",
+                "label": "Support",
+                "value": "/workspace/support",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null
+              },
+              {
+                "id": "@tab_documents",
+                "tag": "a",
+                "type": "",
+                "label": "Documents",
+                "value": "/workspace/documents",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null
+              },
+              {
+                "id": "@ticket_customer",
+                "tag": "input",
+                "type": "text",
+                "label": "Customer Name",
+                "value": "Acme Corp",
+                "required": true,
+                "disabled": false,
+                "checked": null,
+                "valid": true,
+                "form_id": "form_create_ticket"
+              },
+              {
+                "id": "@ticket_priority",
+                "tag": "select",
+                "type": "select-one",
+                "label": "Priority",
+                "value": "Medium",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": true,
+                "form_id": "form_create_ticket",
+                "selected_option": {
+                  "value": "Medium",
+                  "label": "Medium"
+                }
+              },
+              {
+                "id": "@ticket_source_ref",
+                "tag": "input",
+                "type": "text",
+                "label": "Source Document Filename",
+                "value": "",
+                "required": true,
+                "disabled": false,
+                "checked": null,
+                "valid": false,
+                "form_id": "form_create_ticket"
+              },
+              {
+                "id": "@ticket_summary",
+                "tag": "textarea",
+                "type": "textarea",
+                "label": "Summary / Description",
+                "value": "",
+                "required": true,
+                "disabled": false,
+                "checked": null,
+                "valid": false,
+                "form_id": "form_create_ticket"
+              },
+              {
+                "id": "@submit_ticket",
+                "tag": "button",
+                "type": "submit",
+                "label": "Create Ticket",
+                "value": "",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": true,
+                "form_id": "form_create_ticket"
+              }
+            ],
+            "tables": [
+              [
+                [
+                  "TICKET #",
+                  "CUSTOMER",
+                  "PRIORITY",
+                  "SOURCE",
+                  "SUMMARY",
+                  "STATUS"
+                ],
+                [
+                  "TIK-1001",
+                  "Globex Inc",
+                  "Medium",
+                  "legacy_support",
+                  "Initial onboarding sync configuration",
+                  "Resolved"
+                ]
+              ]
+            ]
+          }
+        },
+        "current_browser_url": "http://127.0.0.1:41743/workspace/crm",
+        "progress": {
+          "no_progress_streak": 0,
+          "limit": 4
+        },
+        "source_excerpts": {
+          "http://127.0.0.1:41743/workspace/documents?view=complaint_4821.txt": {
+            "source_url": "http://127.0.0.1:41743/workspace/documents?view=complaint_4821.txt",
+            "text": "CUSTOMER COMPLAINT REPORT #4821\nDate Logged: 2026-10-02 09:14 UTC\nCustomer Name: Acme Corp\nContact Person: Sarah Jenkins (VP Operations, sjenkins@acme.com)\nAccount Reference: ACME-ENT-001\nSeverity Reported: Critical Outage\nDetails:\nWe are experiencing severe database synchronization outages across our EU servers\naffecting hundreds of our enterprise users. Our internal analytics have completely stalled.\nNeed urgent resolution and senior engineering support immediately."
+          }
+        },
+        "dataset_profiles": {},
+        "recent_actions": [
+          {
+            "tool": "browser_type",
+            "args": {
+              "element_id": "@ticket_customer",
+              "text": "Acme Corp",
+              "clear": true
+            },
+            "ok": true,
+            "error_code": null,
+            "error": null,
+            "no_op": false
+          },
+          {
+            "tool": "browser_click",
+            "args": {
+              "element_id": "@tab_crm"
+            },
+            "ok": true,
+            "error_code": null,
+            "error": null,
+            "no_op": false
+          }
+        ]
+      },
+      "observation": {
+        "ok": true,
+        "data": {
+          "outcome": "confirmed_navigation",
+          "inspection": {
+            "url": "http://127.0.0.1:41743/workspace/crm",
+            "title": "CRM - Operon Workspace",
+            "interactive_elements": [
+              {
+                "id": "@tab_finance",
+                "tag": "a",
+                "type": "",
+                "label": "Finance",
+                "value": "/workspace/finance",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null,
+                "options": null
+              },
+              {
+                "id": "@tab_crm",
+                "tag": "a",
+                "type": "",
+                "label": "CRM",
+                "value": "/workspace/crm",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null,
+                "options": null
+              },
+              {
+                "id": "@tab_support",
+                "tag": "a",
+                "type": "",
+                "label": "Support",
+                "value": "/workspace/support",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null,
+                "options": null
+              },
+              {
+                "id": "@tab_documents",
+                "tag": "a",
+                "type": "",
+                "label": "Documents",
+                "value": "/workspace/documents",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null,
+                "options": null
+              },
+              {
+                "id": "@search_crm",
+                "tag": "input",
+                "type": "text",
+                "label": "Search customer (e.g. Acme Corp)...",
+                "value": "",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": true,
+                "form_id": "form_crm_search",
+                "options": null
+              },
+              {
+                "id": "@button_search_crm",
+                "tag": "button",
+                "type": "submit",
+                "label": "Search",
+                "value": "",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": true,
+                "form_id": "form_crm_search",
+                "options": null
+              }
+            ],
+            "tables": [
+              [
+                [
+                  "CUSTOMER NAME",
+                  "ACCOUNT TIER",
+                  "ACCOUNT MANAGER",
+                  "STATUS"
+                ],
+                [
+                  "Acme Corp",
+                  "Enterprise",
+                  "Sarah Jenkins",
+                  "Active"
+                ],
+                [
+                  "Beta Retail",
+                  "Starter",
+                  "Dave Miller",
+                  "Active"
+                ],
+                [
+                  "Globex Inc",
+                  "Growth",
+                  "Bob Vance",
+                  "Active"
+                ]
+              ]
+            ],
+            "feedback": null,
+            "source_preview": ""
+          }
+        },
+        "error": null,
+        "error_code": null,
+        "retriable": false
+      }
+    }
+  },
+  {},
+  {},
+  {},
+  {
+    "actual_serialized_task_data": {
+      "memory": {
+        "sources": {},
+        "pages": {
+          "http://127.0.0.1:41743/workspace/support": {
+            "source_url": "http://127.0.0.1:41743/workspace/support",
+            "current_url": "http://127.0.0.1:41743/workspace/support",
+            "interactive_elements": [
+              {
+                "id": "@tab_finance",
+                "tag": "a",
+                "type": "",
+                "label": "Finance",
+                "value": "/workspace/finance",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null
+              },
+              {
+                "id": "@tab_crm",
+                "tag": "a",
+                "type": "",
+                "label": "CRM",
+                "value": "/workspace/crm",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null
+              },
+              {
+                "id": "@tab_support",
+                "tag": "a",
+                "type": "",
+                "label": "Support",
+                "value": "/workspace/support",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null
+              },
+              {
+                "id": "@tab_documents",
+                "tag": "a",
+                "type": "",
+                "label": "Documents",
+                "value": "/workspace/documents",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null
+              },
+              {
+                "id": "@ticket_customer",
+                "tag": "input",
+                "type": "text",
+                "label": "Customer Name",
+                "value": "",
+                "required": true,
+                "disabled": false,
+                "checked": null,
+                "valid": false,
+                "form_id": "form_create_ticket"
+              },
+              {
+                "id": "@ticket_priority",
+                "tag": "select",
+                "type": "select-one",
+                "label": "Priority",
+                "value": "Medium",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": true,
+                "form_id": "form_create_ticket",
+                "selected_option": {
+                  "value": "Medium",
+                  "label": "Medium"
+                }
+              },
+              {
+                "id": "@ticket_source_ref",
+                "tag": "input",
+                "type": "text",
+                "label": "Source Document Filename",
+                "value": "",
+                "required": true,
+                "disabled": false,
+                "checked": null,
+                "valid": false,
+                "form_id": "form_create_ticket"
+              },
+              {
+                "id": "@ticket_summary",
+                "tag": "textarea",
+                "type": "textarea",
+                "label": "Summary / Description",
+                "value": "",
+                "required": true,
+                "disabled": false,
+                "checked": null,
+                "valid": false,
+                "form_id": "form_create_ticket"
+              },
+              {
+                "id": "@submit_ticket",
+                "tag": "button",
+                "type": "submit",
+                "label": "Create Ticket",
+                "value": "",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": true,
+                "form_id": "form_create_ticket"
+              }
+            ],
+            "tables": [
+              [
+                [
+                  "TICKET #",
+                  "CUSTOMER",
+                  "PRIORITY",
+                  "SOURCE",
+                  "SUMMARY",
+                  "STATUS"
+                ],
+                [
+                  "TIK-1001",
+                  "Globex Inc",
+                  "Medium",
+                  "legacy_support",
+                  "Initial onboarding sync configuration",
+                  "Resolved"
+                ]
+              ]
+            ]
+          }
+        },
+        "current_browser_url": "http://127.0.0.1:41743/workspace/crm",
+        "progress": {
+          "no_progress_streak": 0,
+          "limit": 4
+        },
+        "source_excerpts": {
+          "http://127.0.0.1:41743/workspace/documents?view=complaint_4821.txt": {
+            "source_url": "http://127.0.0.1:41743/workspace/documents?view=complaint_4821.txt",
+            "text": "CUSTOMER COMPLAINT REPORT #4821\nDate Logged: 2026-10-02 09:14 UTC\nCustomer Name: Acme Corp\nContact Person: Sarah Jenkins (VP Operations, sjenkins@acme.com)\nAccount Reference: ACME-ENT-001\nSeverity Reported: Critical Outage\nDetails:\nWe are experiencing severe database synchronization outages across our EU servers\naffecting hundreds of our enterprise users. Our internal analytics have completely stalled.\nNeed urgent resolution and senior engineering support immediately."
+          }
+        },
+        "dataset_profiles": {},
+        "recent_actions": [
+          {
+            "tool": "browser_click",
+            "args": {
+              "element_id": "@tab_support"
+            },
+            "ok": true,
+            "error_code": null,
+            "error": null,
+            "no_op": false
+          },
+          {
+            "tool": "browser_click",
+            "args": {
+              "element_id": "@tab_crm"
+            },
+            "ok": true,
+            "error_code": null,
+            "error": null,
+            "no_op": false
+          }
+        ]
+      },
+      "observation": {
+        "ok": true,
+        "data": {
+          "outcome": "confirmed_navigation",
+          "inspection": {
+            "url": "http://127.0.0.1:41743/workspace/crm",
+            "title": "CRM - Operon Workspace",
+            "interactive_elements": [
+              {
+                "id": "@tab_finance",
+                "tag": "a",
+                "type": "",
+                "label": "Finance",
+                "value": "/workspace/finance",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null,
+                "options": null
+              },
+              {
+                "id": "@tab_crm",
+                "tag": "a",
+                "type": "",
+                "label": "CRM",
+                "value": "/workspace/crm",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null,
+                "options": null
+              },
+              {
+                "id": "@tab_support",
+                "tag": "a",
+                "type": "",
+                "label": "Support",
+                "value": "/workspace/support",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null,
+                "options": null
+              },
+              {
+                "id": "@tab_documents",
+                "tag": "a",
+                "type": "",
+                "label": "Documents",
+                "value": "/workspace/documents",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": null,
+                "form_id": null,
+                "options": null
+              },
+              {
+                "id": "@search_crm",
+                "tag": "input",
+                "type": "text",
+                "label": "Search customer (e.g. Acme Corp)...",
+                "value": "",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": true,
+                "form_id": "form_crm_search",
+                "options": null
+              },
+              {
+                "id": "@button_search_crm",
+                "tag": "button",
+                "type": "submit",
+                "label": "Search",
+                "value": "",
+                "required": false,
+                "disabled": false,
+                "checked": null,
+                "valid": true,
+                "form_id": "form_crm_search",
+                "options": null
+              }
+            ],
+            "tables": [
+              [
+                [
+                  "CUSTOMER NAME",
+                  "ACCOUNT TIER",
+                  "ACCOUNT MANAGER",
+                  "STATUS"
+                ],
+                [
+                  "Acme Corp",
+                  "Enterprise",
+                  "Sarah Jenkins",
+                  "Active"
+                ],
+                [
+                  "Beta Retail",
+                  "Starter",
+                  "Dave Miller",
+                  "Active"
+                ],
+                [
+                  "Globex Inc",
+                  "Growth",
+                  "Bob Vance",
+                  "Active"
+                ]
+              ]
+            ],
+            "feedback": null,
+            "source_preview": ""
+          }
+        },
+        "error": null,
+        "error_code": null,
+        "retriable": false
+      }
+    }
+  },
+  {},
+  {},
+  {},
+  {}
+]

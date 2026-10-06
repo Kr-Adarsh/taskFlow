@@ -1,0 +1,415 @@
+{
+  "objective": "Read complaint 4821, identify the customer, check their CRM account, and if they are an Enterprise customer, create a high-priority support ticket summarizing the complaint.",
+  "generations": [
+    {
+      "schema": "TaskPlan",
+      "response": {
+        "objective": "Read complaint 4821, verify the customer's CRM status, and create a high\u2011priority support ticket if they are an Enterprise customer.",
+        "success_criteria": [
+          "Complaint 4821 is processed and, when applicable, a high\u2011priority ticket is created."
+        ],
+        "tasks": [
+          {
+            "task_id": "process_complaint_4821",
+            "goal": "Read complaint 4821, identify the customer, verify Enterprise status in CRM, and create a high\u2011priority support ticket summarizing the complaint if applicable.",
+            "dependencies": [],
+            "success_criteria": [
+              "Complaint 4821 content retrieved",
+              "Customer identity extracted",
+              "CRM account checked and Enterprise status determined",
+              "If Enterprise, high\u2011priority ticket created with complaint summary"
+            ],
+            "verification_capability": "browser"
+          }
+        ]
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "We need to access the document containing complaint 4821, which is listed in the file catalog under the Documents workspace. Opening the Documents workspace is the next step to view and open the complaint file.",
+        "action": "act",
+        "tool_name": "browser_open",
+        "tool_args": {
+          "url": "/workspace/documents"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "We need to read the content of complaint 4821, and the documents page shows a button @btn_view_complaint_4821.txt to view it, so we should click it.",
+        "action": "act",
+        "tool_name": "browser_click",
+        "tool_args": {
+          "element_id": "@btn_view_complaint_4821.txt"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "Navigate to the CRM workspace to verify the customer's Enterprise status before creating a ticket.",
+        "action": "act",
+        "tool_name": "browser_click",
+        "tool_args": {
+          "element_id": "@tab_crm"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "We have confirmed Acme Corp is Enterprise in CRM. Next we need to navigate to the Support workspace to create the high-priority ticket.",
+        "action": "act",
+        "tool_name": "browser_click",
+        "tool_args": {
+          "element_id": "@tab_support"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [
+          {
+            "document_id": "http://127.0.0.1:34023/workspace/crm",
+            "chunk_id": "inspection",
+            "quote": "interactive element @tab_support"
+          }
+        ],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "Need to verify the customer's Enterprise status in CRM before creating the ticket, so navigate back to the CRM workspace.",
+        "action": "act",
+        "tool_name": "browser_click",
+        "tool_args": {
+          "element_id": "@tab_crm"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "We need to locate the customer in CRM to verify Enterprise status. The complaint shows the customer is Acme Corp, so we type that into the CRM search field.",
+        "action": "act",
+        "tool_name": "browser_type",
+        "tool_args": {
+          "element_id": "@search_crm",
+          "text": "Acme Corp"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [
+          {
+            "document_id": "http://127.0.0.1:34023/workspace/documents?view=complaint_4821.txt",
+            "chunk_id": "0",
+            "quote": "Customer Name: Acme Corp"
+          }
+        ],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "We have identified the customer (Acme Corp) as Enterprise in CRM, so the next step is to navigate to the Support workspace to create the high\u2011priority ticket.",
+        "action": "act",
+        "tool_name": "browser_click",
+        "tool_args": {
+          "element_id": "@tab_support"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "Fill the ticket form with the identified customer name (Acme Corp) before setting priority and summary.",
+        "action": "act",
+        "tool_name": "browser_type",
+        "tool_args": {
+          "element_id": "@ticket_customer",
+          "text": "Acme Corp"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [
+          {
+            "document_id": "http://127.0.0.1:34023/workspace/documents?view=complaint_4821.txt",
+            "chunk_id": "0",
+            "quote": "Customer Name: Acme Corp"
+          }
+        ],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "Set ticket priority to High now that we have confirmed Acme Corp is an Enterprise customer in the CRM table.",
+        "action": "act",
+        "tool_name": "browser_select",
+        "tool_args": {
+          "element_id": "@ticket_priority",
+          "value": "High"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [
+          {
+            "document_id": "http://127.0.0.1:34023/workspace/crm",
+            "chunk_id": "crm_table_row_1",
+            "quote": "\"Acme Corp\",\"Enterprise\""
+          }
+        ],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "Fill the source document filename field for the ticket with the complaint file name, using the known complaint document as evidence.",
+        "action": "act",
+        "tool_name": "browser_type",
+        "tool_args": {
+          "element_id": "@ticket_source_ref",
+          "text": "complaint_4821.txt"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [
+          {
+            "document_id": "http://127.0.0.1:34023/workspace/documents?view=complaint_4821.txt",
+            "chunk_id": "0",
+            "quote": "CUSTOMER COMPLAINT REPORT #4821\nDate Logged: 2026-10-02 09:14 UTC\nCustomer Name: Acme Corp"
+          }
+        ],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "Fill the ticket summary with the complaint details before creating the ticket.",
+        "action": "act",
+        "tool_name": "browser_type",
+        "tool_args": {
+          "element_id": "@ticket_summary",
+          "text": "CUSTOMER COMPLAINT REPORT #4821\nDate Logged: 2026-10-02 09:14 UTC\nCustomer Name: Acme Corp\nContact Person: Sarah Jenkins (VP Operations, sjenkins@acme.com)\nAccount Reference: ACME-ENT-001\nSeverity Reported: Critical Outage\nDetails: Severe database synchronization outages across EU servers affecting hundreds of enterprise users. Internal analytics have stalled. Urgent resolution and senior engineering support required."
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [
+          {
+            "document_id": "http://127.0.0.1:34023/workspace/documents?view=complaint_4821.txt",
+            "chunk_id": "0",
+            "quote": "CUSTOMER COMPLAINT REPORT #4821\nDate Logged: 2026-10-02 09:14 UTC\nCustomer Name: Acme Corp\nContact Person: Sarah Jenkins (VP Operations, sjenkins@acme.com)\nAccount Reference: ACME-ENT-001\nSeverity Reported: Critical Outage\nDetails:\nWe are experiencing severe database synchronization outages across our EU servers affecting hundreds of our enterprise users. Our internal analytics have completely stalled.\nNeed urgent resolution and senior engineering support immediately."
+          }
+        ],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "CRM shows Acme Corp is an Enterprise customer and the support ticket form is pre-filled with required fields, so we can submit the high\u2011priority ticket.",
+        "action": "act",
+        "tool_name": "browser_click",
+        "tool_args": {
+          "element_id": "@submit_ticket"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [
+          {
+            "document_id": "http://127.0.0.1:34023/workspace/crm",
+            "chunk_id": "table_row_1",
+            "quote": "Acme Corp, Enterprise"
+          },
+          {
+            "document_id": "http://127.0.0.1:34023/workspace/documents?view=complaint_4821.txt",
+            "chunk_id": "0",
+            "quote": "Customer Name: Acme Corp"
+          }
+        ],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "Ticket created, but need to verify the customer's Enterprise status in CRM before confirming completion of the objective.",
+        "action": "act",
+        "tool_name": "browser_click",
+        "tool_args": {
+          "element_id": "@tab_crm"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "We need to move to the Support workspace to create the ticket, so the next step is to click the Support tab.",
+        "action": "act",
+        "tool_name": "browser_click",
+        "tool_args": {
+          "element_id": "@tab_support"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [
+          {
+            "document_id": "http://127.0.0.1:34023/workspace/crm",
+            "chunk_id": "inspection_interactive_elements",
+            "quote": "\"id\":\"@tab_support\",\"tag\":\"a\",\"label\":\"Support\""
+          }
+        ],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "Fill the Customer Name field on the support ticket form with the identified customer from complaint 4821 (Acme Corp).",
+        "action": "act",
+        "tool_name": "browser_type",
+        "tool_args": {
+          "element_id": "@ticket_customer",
+          "text": "Acme Corp",
+          "clear": true
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [
+          {
+            "document_id": "complaint_4821.txt",
+            "chunk_id": "0",
+            "quote": "Customer Name: Acme Corp"
+          }
+        ],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "Acme Corp is an Enterprise customer per CRM; set ticket priority to High before completing the ticket.",
+        "action": "act",
+        "tool_name": "browser_select",
+        "tool_args": {
+          "element_id": "@ticket_priority",
+          "value": "High"
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [
+          {
+            "document_id": "http://127.0.0.1:34023/workspace/crm",
+            "chunk_id": "chunk_0",
+            "quote": "\"Acme Corp\",\"Enterprise\""
+          }
+        ],
+        "result": {},
+        "replan": false
+      }
+    },
+    {
+      "schema": "Decision",
+      "response": {
+        "thought": "Fill the required source reference field with the complaint filename before submitting the ticket.",
+        "action": "act",
+        "tool_name": "browser_type",
+        "tool_args": {
+          "element_id": "@ticket_source_ref",
+          "text": "complaint_4821.txt",
+          "clear": true
+        },
+        "clarification_question": null,
+        "failure_reason": null,
+        "evidence": [
+          {
+            "document_id": "http://127.0.0.1:34023/workspace/documents?view=complaint_4821.txt",
+            "chunk_id": "0",
+            "quote": "Customer Name: Acme Corp"
+          },
+          {
+            "document_id": "http://127.0.0.1:34023/workspace/crm",
+            "chunk_id": "row_1",
+            "quote": "Acme Corp\",\"Enterprise"
+          }
+        ],
+        "result": {},
+        "replan": false
+      }
+    }
+  ],
+  "state_delta": {
+    "invoices": {
+      "created": [],
+      "updated": [],
+      "deleted": []
+    },
+    "tickets": {
+      "created": [
+        {
+          "id": 3,
+          "ticket_id": "TIK-8402",
+          "customer": "Acme Corp",
+          "priority": "High",
+          "status": "Open",
+          "source_reference": "complaint_4821.txt",
+          "summary": "CUSTOMER COMPLAINT REPORT #4821\r\nDate Logged: 2026-10-02 09:14 UTC\r\nCustomer Name: Acme Corp\r\nContact Person: Sarah Jenkins (VP Operations, sjenkins@acme.com)\r\nAccount Reference: ACME-ENT-001\r\nSeverity Reported: Critical Outage\r\nDetails: Severe database synchronization outages across EU servers affecting hundreds of enterprise users. Internal analytics have stalled. Urgent resolution and senior engineering support required.",
+          "created_at": "2026-10-06T00:38:45.699406+00:00",
+          "mutation_key": "0967b996c5fbc45dfedc674e6cc6c6d22ac8122a033bb64a4ece587ab39b090b"
+        }
+      ],
+      "updated": [],
+      "deleted": []
+    },
+    "accounts": {
+      "created": [],
+      "updated": [],
+      "deleted": []
+    }
+  }
+}

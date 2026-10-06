@@ -35,6 +35,7 @@ async def test_complete_wire_shape_and_valid_act_need_one_request(tmp_path, sche
     wire = adapter._wire_schema(schema)
     assert set(wire['required']) == set(decision())
     assert wire['properties']['tool_args']['type'] == 'object'
+    assert wire['properties']['tool_args']['additionalProperties'] is True
     assert 'anyOf' not in wire['properties']['tool_args']
     result, metadata = await adapter.generate_structured([], schema)
     assert result.tool_args == {'document_id': 'example.pdf'}

@@ -357,7 +357,8 @@ class GeminiProvider(LLMProvider):
             properties.setdefault('replan', {'type': 'boolean'})
             names = [tool['name'] for tool in getattr(self, 'tool_schemas', [])]
             properties['tool_name'] = {'anyOf': [{'type': 'string', 'enum': names}, {'type': 'null'}]} if names else {'type': 'null'}
-            properties['tool_args'] = {'type': 'object', 'description': 'Exact selected-tool arguments for act; {} for every non-act decision.'}
+            properties['tool_args'] = {'type': 'object', 'additionalProperties': True,
+                                      'description': 'Exact selected-tool arguments for act; {} for every non-act decision.'}
             schema['required'] = ['thought', 'action', 'tool_name', 'tool_args', 'clarification_question', 'failure_reason', 'evidence', 'result', 'replan']
         return schema
 
@@ -424,6 +425,8 @@ class GeminiProvider(LLMProvider):
         rate_wait = 0.0
         prompt_tokens = completion_tokens = total_tokens = thought_tokens = 0
         response_errors = []
+        schema_repairs = 0
+        transport_retries = 0
         for attempt in range(2):
             rate_wait += await self._acquire_rate_limit()
             self.usage['requests'] += 1
@@ -433,6 +436,10 @@ class GeminiProvider(LLMProvider):
             except httpx.TransportError:
                 self.usage['incomplete'] = True
                 self.usage['provider_errors'].append({'code': 'transport_error'})
+                if not attempt:
+                    transport_retries += 1
+                    await asyncio.sleep(0.5)
+                    continue
                 raise ProviderError('Gemini transport failed or request timed out', retriable=True) from None
             if response.status_code != 200:
                 self.usage['incomplete'] = True
@@ -458,9 +465,25 @@ class GeminiProvider(LLMProvider):
             thought_tokens += thought
             for key, value in (('prompt_tokens', p), ('completion_tokens', c), ('total_tokens', total), ('thought_tokens', thought)):
                 self.usage[key] += value
-            if data.get('status') != 'completed':
-                self.usage['provider_errors'].append({'code': 'interaction_not_completed'})
-                raise ProviderError('Gemini interaction did not complete')
+            status = data.get('status')
+            if status != 'completed':
+                diagnostic = {'code': 'interaction_not_completed',
+                              'status': status if status in ('incomplete', 'in_progress', 'failed', 'requires_action') else 'unknown',
+                              'completion_cap': self.max_output_tokens,
+                              'schema': response_schema.__name__}
+                response_errors.append(diagnostic)
+                if status == 'incomplete' and not attempt:
+                    # A truncated generation cannot supply an action. Spend the existing
+                    # single repair opportunity, without increasing output/request budgets.
+                    schema_repairs += 1
+                    payload['input'] = json.dumps({'messages': inputs, 'response_contract': contract,
+                        'repair': {'instruction': 'The previous response was truncated. Return a complete compact JSON object matching the schema. Keep the thought to one short sentence and do not repeat source text.',
+                                   'validation_error': 'Interaction incomplete before a complete structured response',
+                                   'completion_cap': self.max_output_tokens}})
+                    continue
+                self.usage['provider_errors'].extend(response_errors)
+                raise ProviderError('Gemini interaction did not complete '
+                                    f"(status={diagnostic['status']}; output cap={self.max_output_tokens} tokens)")
             text = ''
             parsed = None
             try:
@@ -483,6 +506,7 @@ class GeminiProvider(LLMProvider):
                     self.usage['provider_errors'].extend(response_errors)
                     raise ProviderError('Gemini output failed schema/tool validation after one repair') from None
                 repair = {'instruction': 'Return the COMPLETE corrected JSON object matching the response schema.', 'validation_error': reason}
+                schema_repairs += 1
                 tool = self._repair_tool(parsed) if contract else None
                 if tool is not None:
                     from copy import deepcopy
@@ -498,7 +522,8 @@ class GeminiProvider(LLMProvider):
             return instance, {'provider': 'gemini', 'model': self.model,
                 'latency_seconds': round(time.perf_counter() - started, 3), 'prompt_eval_count': prompt_tokens,
                 'eval_count': completion_tokens, 'total_tokens': total_tokens, 'thought_tokens': thought_tokens,
-                'attempts': attempt + 1, 'schema_repairs': attempt, 'response_errors': response_errors,
+                'attempts': attempt + 1, 'schema_repairs': schema_repairs, 'transport_retries': transport_retries,
+                'response_errors': response_errors,
                 'rate_wait_seconds': round(rate_wait, 3)}
 
     def usage_snapshot(self):
@@ -553,8 +578,8 @@ class FakeProvider(LLMProvider):
             raise ProviderError("FakeProvider ran out of scripted responses")
         
         next_resp = self.responses.pop(0)
-        if isinstance(next_resp, response_schema):
-            return next_resp, {"model": "fake", "latency_seconds": 0.001}
+        if isinstance(next_resp, BaseModel):
+            return response_schema.model_validate(next_resp.model_dump()), {"model": "fake", "latency_seconds": 0.001}
         elif isinstance(next_resp, dict):
             return response_schema.model_validate(next_resp), {"model": "fake", "latency_seconds": 0.001}
         else:

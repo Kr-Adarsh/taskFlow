@@ -150,7 +150,66 @@ async def test_nonterminal_or_failed_interactions_never_become_valid_decisions(s
     provider=adapter(lambda request:response(PLAN,status=status))
     with pytest.raises(ProviderError,match='did not complete'):
         await provider.generate_structured([],TaskPlan)
-    assert provider.usage_snapshot()['total_tokens']==7
+    expected_calls = 2 if status == 'incomplete' else 1
+    assert provider.usage_snapshot()['requests'] == expected_calls
+    assert provider.usage_snapshot()['total_tokens'] == 7 * expected_calls
+
+
+async def test_truncated_response_spends_one_existing_repair_and_requires_completed_output():
+    calls = []
+    def send(request):
+        calls.append(json.loads(request.content))
+        return response(PLAN, status='incomplete' if len(calls) == 1 else 'completed')
+    provider = adapter(send)
+    result, metadata = await provider.generate_structured([], TaskPlan)
+    assert result.objective == PLAN['objective']
+    assert len(calls) == 2 and metadata['schema_repairs'] == 1
+    assert metadata['response_errors'][0]['status'] == 'incomplete'
+    assert metadata['response_errors'][0]['schema'] == 'TaskPlan'
+    assert metadata['response_errors'][0]['completion_cap'] == provider.max_output_tokens
+    assert calls[0]['generation_config'] == calls[1]['generation_config']
+    assert 'truncated' in json.loads(calls[1]['input'])['repair']['instruction']
+    assert provider.usage_snapshot()['total_tokens'] == 14
+
+
+async def test_transient_transport_retry_is_counted_without_claiming_schema_repair():
+    calls = []
+    def send(request):
+        calls.append(request)
+        if len(calls) == 1:
+            raise httpx.ReadTimeout('test-secret', request=request)
+        return response(PLAN)
+    provider = adapter(send)
+    _, metadata = await provider.generate_structured([], TaskPlan)
+    assert len(calls) == 2
+    assert metadata['transport_retries'] == 1 and metadata['schema_repairs'] == 0
+    assert provider.usage_snapshot()['incomplete']
+    assert provider.usage_snapshot()['total_tokens'] == 7
+    assert provider.usage_snapshot()['requests'] == 2
+    assert 'test-secret' not in json.dumps(metadata)
+
+
+async def test_truncation_repair_cannot_cross_the_daily_limit():
+    calls = []
+    def send(request):
+        calls.append(request)
+        return response(PLAN, status='incomplete')
+    provider = adapter(send, max_rpd=1)
+    with pytest.raises(ProviderError, match='daily quota'):
+        await provider.generate_structured([], TaskPlan)
+    assert len(calls) == 1
+
+
+async def test_invalid_then_truncated_output_cannot_get_a_third_request():
+    calls = []
+    def send(request):
+        calls.append(request)
+        return response({'invalid': True} if len(calls) == 1 else PLAN,
+                        status='completed' if len(calls) == 1 else 'incomplete')
+    provider = adapter(send)
+    with pytest.raises(ProviderError, match='status=incomplete'):
+        await provider.generate_structured([], TaskPlan)
+    assert len(calls) == 2
 
 
 async def test_null_arguments_are_repaired_by_model_not_silently_filled():

@@ -3,22 +3,49 @@
 TaskFlow is a local prototype that carries out a natural-language objective across Finance, CRM, Support and document applications. Browser actions write to SQLite; generated Python analyzes registered CSV files locally.
 
 ```mermaid
-flowchart LR
-    UI[Execution dashboard] --> API[FastAPI run API]
-    API --> Graph[LangGraph runtime]
-    Graph --> Model[Selected LLM provider]
-    Model --> Graph
-    Graph --> Tools[Capability registry]
-    Tools --> Browser[Browser actions]
-    Tools --> Docs[Local document retrieval]
-    Tools --> Python[Isolated Python worker]
-    Browser --> Apps[Company apps and SQLite]
-    Graph --> Verify[Independent verification]
-    Verify --> Apps
-    Verify --> Docs
-    Verify --> Python
-    Verify --> Audit[Final mutation audit]
-    Audit --> UI
+flowchart TD
+    subgraph UI_Layer ["Interface & Control"]
+        UI["Execution<br/>Dashboard"]
+        API["FastAPI<br/>Run API"]
+        UI <-->|Stream / Control| API
+    end
+
+    subgraph Core ["Agent Runtime"]
+        Graph["LangGraph<br/>Runtime"]
+        Model["Selected LLM<br/>Provider"]
+        API --> Graph
+        Graph <--> Model
+    end
+
+    subgraph Tools_Layer ["Capability Registry"]
+        Tools["Capability<br/>Registry"]
+        Browser["Browser<br/>Actions"]
+        Docs["Local Document<br/>Retrieval"]
+        Python["Isolated<br/>Python Worker"]
+
+        Graph --> Tools
+        Tools --> Browser
+        Tools --> Docs
+        Tools --> Python
+    end
+
+    subgraph Workspace ["Target Applications"]
+        Apps[("Company Apps<br/>& SQLite")]
+        Browser --> Apps
+    end
+
+    subgraph Assurance ["Independent Verification & Audit"]
+        Verify["Independent<br/>Verification"]
+        Audit["Final Mutation<br/>Audit"]
+
+        Graph --> Verify
+        Verify -.->|Inspect State| Apps
+        Verify -.->|Read Sources| Docs
+        Verify -.->|Validate Output| Python
+        Verify --> Audit
+    end
+
+    Audit -.->|Results & Evidence| UI
 ```
 
 ## Who owns what

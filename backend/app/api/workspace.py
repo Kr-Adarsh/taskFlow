@@ -188,7 +188,7 @@ def page_finance(
     <h1>Finance - Invoices Ledger</h1>
     {alert_html}
     <div class="card">
-        <h3>Record New Invoice</h3>
+        <h3>Record Invoice</h3>
         <form method="POST" action="/workspace/finance/submit" id="form_create_invoice">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="form-group">

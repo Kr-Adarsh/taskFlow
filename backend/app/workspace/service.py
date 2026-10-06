@@ -5,7 +5,6 @@ Provides domain logic, transactional mutations, constraints, and fault injection
 
 from datetime import datetime, timezone
 from pathlib import Path
-import sqlite3
 import hashlib
 import re
 from backend.app.workspace.lease import assert_mutation_access
@@ -28,19 +27,33 @@ from backend.app.workspace.models import (
 
 def create_invoice(invoice_data: InvoiceCreate, db_path: Path | None = None) -> InvoiceRecord:
     """
-    Creates an invoice in the Finance application.
+    Records an invoice, replacing submitted fields for an existing identity.
     Enforces deterministic fault injection before transaction commit.
     Enforces uniqueness of (company, invoice_number).
     """
     
     amount_minor = parse_money_to_minor(invoice_data.amount)
-    now_iso = datetime.now(timezone.utc).isoformat()
-    
     with get_db_connection(db_path) as conn:
         conn.execute("BEGIN IMMEDIATE")
         assert_mutation_access(conn)
         fault_manager.maybe_fail("finance_create_invoice")
-        try:
+        now_iso = datetime.now(timezone.utc).isoformat()
+        existing = conn.execute(
+            "SELECT * FROM finance_invoices WHERE LOWER(TRIM(company)) = LOWER(?) "
+            "AND LOWER(TRIM(invoice_number)) = LOWER(?)",
+            (invoice_data.company.strip(), invoice_data.invoice_number.strip()),
+        ).fetchone()
+        if existing:
+            # Retain identity, creation time and payment status unless explicitly submitted.
+            status = invoice_data.status if "status" in invoice_data.model_fields_set else existing["status"]
+            conn.execute(
+                "UPDATE finance_invoices SET amount_minor=?, currency=?, due_date=?, "
+                "status=?, source_reference=?, updated_at=? WHERE id=?",
+                (amount_minor, invoice_data.currency.upper(), invoice_data.due_date,
+                 status, invoice_data.source_reference, now_iso, existing["id"]),
+            )
+            invoice_id = existing["id"]
+        else:
             cursor = conn.execute(
                 """
                 INSERT INTO finance_invoices (
@@ -60,11 +73,7 @@ def create_invoice(invoice_data: InvoiceCreate, db_path: Path | None = None) -> 
                 )
             )
             invoice_id = cursor.lastrowid
-            conn.commit()
-        except sqlite3.IntegrityError as e:
-            if "UNIQUE constraint failed" in str(e) or "uq_company_invoice" in str(e):
-                raise ValueError(f"Duplicate invoice: {invoice_data.company} invoice {invoice_data.invoice_number} already exists")
-            raise
+        conn.commit()
 
     return get_invoice(invoice_id, db_path=db_path)
 
@@ -83,7 +92,8 @@ def get_invoice(invoice_id: int, db_path: Path | None = None) -> InvoiceRecord |
             due_date=row["due_date"],
             status=row["status"],
             created_at=row["created_at"],
-            source_reference=row["source_reference"]
+            source_reference=row["source_reference"],
+            updated_at=row["updated_at"],
         )
 
 def list_invoices(company: str | None = None, db_path: Path | None = None) -> list[InvoiceRecord]:
@@ -107,7 +117,8 @@ def list_invoices(company: str | None = None, db_path: Path | None = None) -> li
                 due_date=r["due_date"],
                 status=r["status"],
                 created_at=r["created_at"],
-                source_reference=r["source_reference"]
+                source_reference=r["source_reference"],
+                updated_at=r["updated_at"],
             )
             for r in rows
         ]

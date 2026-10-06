@@ -115,6 +115,9 @@ def init_db(db_path: Path | None = None) -> None:
             conn.execute("ALTER TABLE support_tickets ADD COLUMN mutation_key TEXT")
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS ticket_mutation_identity ON support_tickets(mutation_key) WHERE mutation_key IS NOT NULL")
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS finance_canonical_identity ON finance_invoices(LOWER(TRIM(company)),LOWER(TRIM(invoice_number)))")
+        invoice_columns = {row[1] for row in conn.execute("PRAGMA table_info(finance_invoices)")}
+        if "updated_at" not in invoice_columns:
+            conn.execute("ALTER TABLE finance_invoices ADD COLUMN updated_at TEXT")
         conn.commit()
 
 @contextmanager

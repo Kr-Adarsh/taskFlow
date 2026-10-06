@@ -47,13 +47,15 @@ Only the current browser page exposes actionable controls. Historical pages reta
 
 Business writes go through browser forms into SQLite. Unknown outcomes require inspection. A pre-commit503 is visible and retriable; the model chooses whether to retry. A confirmed mutation and observed persisted delta trigger verification before another executor decision. Persistence itself is not proof of success.
 
+Submitting the same company and invoice number again updates the existing invoice. Its record ID and creation time stay intact, and the saved values still pass independent source checks.
+
 Verifiers independently check source identity, latest-invoice selection, money, currency, due dates, exact accounts, conditional ticket creation, grounded summaries and unwanted mutations. A single full-objective task also passes a deterministic final mutation audit. Genuine multi-task objectives receive an additional coverage assessment.
 
 See [the architecture](docs/architecture.md) for component ownership.
 
 ## Local CSV analysis
 
-Raw CSV content stays local. The provider receives a bounded profile with shape, column types, statistics and three sample rows. Generated code reads registered paths through `inputs[document_id]`, writes only under `output_dir`, and returns compact metrics or named tables. Tables become local artifacts with bounded previews.
+Raw CSV content stays local. The provider receives a bounded profile with shape, column types, statistics and three sample rows. Generated code reads registered paths through `inputs[document_id]`, writes only under `output_dir`, and returns compact metrics or named pandas DataFrames. Tables become local artifacts with bounded previews.
 
 The worker validates code, runs a sample before full execution where applicable, and records input/code hashes and row counts. Supported imports are pandas, numpy, math, statistics, datetime and json. Trusted normalization accepts supported scalar types and flat metrics without rewriting generated code. A successful full execution owns the final result; the model's echo is retained only as a diagnostic. An independent calculation contract recomputes supported grouped comparisons against the full dataset.
 
@@ -84,7 +86,7 @@ TASKFLOW_RUN_REAL=1 LLM_PROVIDER=groq GROQ_MODEL=openai/gpt-oss-120b \
   .venv/bin/pytest -q -s tests/test_v2_real_acceptance.py::test_v2_invoice
 ```
 
-The invoice, complaint and sales-analysis demos passed live acceptance, including independent verification, safe 503 recovery and no unwanted mutations. A separate software regression suite passed 412 tests. See [validation results](docs/validations.md) for outcomes, usage and timing.
+The invoice, complaint and sales-analysis demos passed live with Groq and Gemini, including independent verification, safe 503 recovery and no unwanted mutations. The latest software regression suite passed 465 tests. See [validation results](docs/validations.md) for outcomes, usage and timing.
 
 Demo objectives:
 
@@ -92,10 +94,12 @@ Demo objectives:
 2. Read complaint 4821, identify the customer, check their CRM account, and if they are an Enterprise customer, create a high-priority support ticket summarizing the complaint.
 3. Analyze sales.csv and identify the region with the largest absolute revenue decline between 2026-08 and 2026-09, including the calculated decline.
 
-Complaint 4822 covers the non-Enterprise no-op in deterministic tests. Fixture answers belong to tests, not runtime workflow rules.
+Complaint 4822 covers the non-Enterprise no-op in deterministic and live tests. Fixture answers belong to tests, not runtime workflow rules.
 
 ## Scope
 
 This is a synthetic local prototype for one trusted operator, without production authentication or deployment guarantees. Verification supports the current applications, labelled sources and grouped numeric comparisons; arbitrary domains, layouts and analyses are not universally supported. Ties, ambiguous identities and missing fields stay unresolved.
 
-Startup marks unfinished runs interrupted rather than resuming them. There is no in-run clarification continuation, record correction/delete UI, voice input or approval workflow.
+Company-name aliases are not resolved automatically. Use the vendor or customer name shown in the source records.
+
+Startup marks unfinished runs interrupted rather than resuming them. There is no in-run clarification continuation, general record-edit/delete UI, voice input or approval workflow.

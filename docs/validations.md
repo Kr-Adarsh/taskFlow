@@ -24,10 +24,19 @@ Verified outcomes:
 - Sales: all 800 rows processed locally; South had the largest revenue decline at 27,000, confirmed by independent recomputation.
 - All three passed independent verification and the final mutation audit, with no unwanted business changes.
 
+Gemini `gemini-3.5-flash-lite` also passed the same three objectives and the non-Enterprise no-op:
+
+| Case | Result | Decisions | API calls | Total tokens | Run duration |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Invoice intake, including 503 retry | PASS | 10 | 12 | 37,859 | 32.8s |
+| Complaint → CRM → Support | PASS | 8 | 11 | 31,560 | 30.7s |
+| Sales analysis | PASS | 4 | 6 | 15,700 | 20.6s |
+| Non-Enterprise complaint | PASS | 3 | 5 | 11,297 | 14.4s |
+
 ## Software regression tests
 
 | Passed | Failed | Duration |
 | ---: | ---: | ---: |
-| 412 | 0 | 153.46s |
+| 465 | 0 | 198.49s |
 
 Covered browser actions, database writes, duplicate protection, failure recovery, context handling, Python isolation, result ownership and independent verification. The real-model end-to-end results are reported separately above.

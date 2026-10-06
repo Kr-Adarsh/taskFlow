@@ -41,7 +41,7 @@ def test_finance_form_submission_success():
     assert "recorded successfully" in res.text
     assert "INV-1044" in res.text
 
-def test_finance_form_duplicate_rejection():
+def test_finance_form_duplicate_replacement():
     data = {
         "company": "Acme Corp",
         "invoice_number": "INV-1005",  # Already in initial seed
@@ -51,8 +51,13 @@ def test_finance_form_duplicate_rejection():
         "due_date": "2026-07-31"
     }
     res = client.post("/workspace/finance/submit", data=data)
-    assert res.status_code == 400
-    assert "Duplicate invoice" in res.text
+    assert res.status_code == 200
+    assert "recorded successfully" in res.text
+    invoices = client.get('/api/workspace/invoices?company=Acme%20Corp').json()
+    row, = invoices
+    assert row['invoice_number'] == 'INV-1005'
+    assert row['source_reference'] == data['source_reference']
+    assert row['updated_at'] and row['status'] == 'Paid'
 
 def test_finance_fault_injection_on_api():
     # Arm fault

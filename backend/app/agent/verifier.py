@@ -16,7 +16,9 @@ from backend.app.workspace.models import parse_money_to_minor
 
 def snapshot_state(db_path: Path | None = None) -> dict:
     with get_db_connection(db_path, read_only=True) as connection:
-        return {name: [dict(row) for row in connection.execute(f"SELECT * FROM {table} ORDER BY id")]
+        return {name: [{key: value for key, value in dict(row).items()
+                       if key != "updated_at" or value is not None}
+                      for row in connection.execute(f"SELECT * FROM {table} ORDER BY id")]
                 for name, table in (("invoices", "finance_invoices"), ("tickets", "support_tickets"), ("accounts", "crm_accounts"))}
 
 
@@ -259,9 +261,17 @@ class VerifierEngine:
                         actual = row.get(field)
                         matches = canonical(actual or "") == canonical(value) if field == "company" else actual == value
                         check(f"Invoice {field} matches source", matches, {"record_id": row["id"], "source_id": source["filename"], "expected": value, "actual": actual}, f"{field} mismatch: expected {value}, actual {actual}")
-                    created = row["id"] not in {item["id"] for item in before["invoices"]}
-                    check("Requested invoice creation occurred during this run", created or not intent.require_new_record, {"record_id": row["id"], "created_during_run": created}, "Invoice existed before run; no requested new creation occurred")
-                self._check_delta(check, delta, "invoices", allowed_ids)
+                    previous = next((item for item in before["invoices"] if item["id"] == row["id"]), None)
+                    created = previous is None
+                    replaced = bool(previous and row.get("updated_at")
+                                    and row["updated_at"] != previous.get("updated_at")
+                                    and row["created_at"] == previous["created_at"]
+                                    and row["company"] == previous["company"]
+                                    and row["invoice_number"] == previous["invoice_number"])
+                    check("Requested invoice recorded during this run", created or replaced or not intent.require_new_record,
+                          {"record_id": row["id"], "created_during_run": created, "replaced_during_run": replaced},
+                          "Invoice existed before run and was not recorded again")
+                self._check_delta(check, delta, "invoices", allowed_ids, allow_updates=True)
             elif intent.collection == "accounts":
                 self._verify_account(intent, after, delta, reported_result or {}, check)
             else:
@@ -392,10 +402,11 @@ class VerifierEngine:
         self._check_delta(check, delta, "tickets", allowed_ids)
 
     @staticmethod
-    def _check_delta(check, delta, allowed_collection, allowed_ids):
+    def _check_delta(check, delta, allowed_collection, allowed_ids, *, allow_updates=False):
         unwanted = []
+        allowed_kinds = {"created", "updated"} if allow_updates else {"created"}
         for collection, changes in delta.items():
             for kind, rows in changes.items():
                 unwanted += [{"collection": collection, "kind": kind, "record_id": row["id"]} for row in rows
-                             if collection != allowed_collection or kind != "created" or row["id"] not in allowed_ids]
+                             if collection != allowed_collection or kind not in allowed_kinds or row["id"] not in allowed_ids]
         check("No unwanted mutations", not unwanted, {"unwanted_mutations": unwanted}, "Unexpected records were created, modified or deleted")

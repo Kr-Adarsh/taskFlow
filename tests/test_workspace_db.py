@@ -61,7 +61,7 @@ def test_seed_reproducibility(temp_db: Path):
     assert beta_crm is not None
     assert beta_crm.tier == "Starter"
 
-def test_finance_invoice_create_and_duplicate_rejection(temp_db: Path):
+def test_finance_invoice_create_and_duplicate_replacement(temp_db: Path):
     inv_data = InvoiceCreate(
         company="Acme Corp",
         invoice_number="INV-1044",
@@ -77,9 +77,11 @@ def test_finance_invoice_create_and_duplicate_rejection(temp_db: Path):
     assert created.amount_formatted == "₹84,500.00"
     assert created.invoice_number == "INV-1044"
 
-    # Verify duplicate creation raises ValueError
-    with pytest.raises(ValueError, match="Duplicate invoice"):
-        create_invoice(inv_data, db_path=temp_db)
+    replaced = create_invoice(inv_data, db_path=temp_db)
+    assert replaced.id == created.id
+    assert replaced.created_at == created.created_at
+    assert replaced.updated_at is not None
+    assert len(list_invoices(company="Acme Corp", db_path=temp_db)) == 2
 
 def test_support_ticket_create_and_list(temp_db: Path):
     ticket_data = SupportTicketCreate(

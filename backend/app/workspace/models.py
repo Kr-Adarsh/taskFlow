@@ -61,6 +61,7 @@ class InvoiceRecord(BaseModel):
     status: str
     created_at: str
     source_reference: Optional[str] = None
+    updated_at: Optional[str] = None
 
 class CRMAccountRecord(BaseModel):
     id: int

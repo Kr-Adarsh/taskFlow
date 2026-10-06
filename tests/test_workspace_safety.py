@@ -48,10 +48,13 @@ def test_unresolved_ticket_reference_rejected_before_mutation(reference):
         assert conn.execute('SELECT COUNT(*) FROM support_tickets').fetchone()[0] == before
 
 
-def test_case_insensitive_invoice_duplicate():
+def test_case_insensitive_invoice_replacement():
     payload=InvoiceCreate(company='Acme Corp',invoice_number='INV-1005',amount='100',due_date='2026-10-01')
-    with pytest.raises(ValueError,match='Duplicate'):
-        create_invoice(payload.model_copy(update={'company':' acme corp ', 'invoice_number':'inv-1005'}))
+    replaced = create_invoice(payload.model_copy(update={'company':' acme corp ', 'invoice_number':'inv-1005'}))
+    assert replaced.company == 'Acme Corp' and replaced.invoice_number == 'INV-1005'
+    assert replaced.amount_minor == 10000
+    with get_db_connection() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM finance_invoices WHERE LOWER(company)='acme corp'").fetchone()[0] == 1
 
 
 def test_concurrent_reservations_and_manual_write_reset_blocked():

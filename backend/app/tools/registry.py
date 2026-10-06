@@ -1,5 +1,5 @@
 """
-Tool registry for Operon.
+Tool registry for TaskFlow.
 Registers tools, validates inputs against JSON schemas, and dispatches execution safely.
 """
 

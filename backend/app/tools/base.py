@@ -1,5 +1,5 @@
 """
-Tool contracts and execution envelopes for Operon.
+Tool contracts and execution envelopes for TaskFlow.
 """
 
 from typing import Any, Callable, Optional

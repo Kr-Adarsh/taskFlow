@@ -1,5 +1,5 @@
 """
-Closed-loop autonomous agent runtime for Operon.
+Closed-loop autonomous agent runtime for TaskFlow.
 Implements the plan -> observe -> decide -> act -> observe -> memory -> verify cycle.
 Handles bounded step budgets, event emission, SSE streaming, and verification repair.
 """
@@ -44,7 +44,7 @@ class AgentRunner:
     ):
         if not 1 <= max_steps <= 40 or not 1 <= max_verification_attempts <= 3:
             raise ValueError("Invalid runtime bounds")
-        self.run_deadline_seconds = float(run_deadline_seconds if run_deadline_seconds is not None else os.getenv("OPERON_RUN_DEADLINE_SECONDS", "600"))
+        self.run_deadline_seconds = float(run_deadline_seconds if run_deadline_seconds is not None else os.getenv("TASKFLOW_RUN_DEADLINE_SECONDS", "600"))
         if not 0 < self.run_deadline_seconds <= 600:
             raise ValueError("Invalid run deadline")
         self.provider = provider or get_default_provider()

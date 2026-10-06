@@ -1,5 +1,5 @@
 """
-Generate synthetic documents for Operon.
+Generate synthetic documents for TaskFlow.
 Creates searchable PDF and text fixtures in fixtures/documents/.
 """
 

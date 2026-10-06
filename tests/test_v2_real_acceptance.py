@@ -13,7 +13,7 @@ from backend.app.agent_v2.context import SYSTEM_PROMPT
 from backend.app.agent.verifier import snapshot_state, state_delta
 from backend.app.workspace.fault_injection import fault_manager
 
-pytestmark=[pytest.mark.anyio,pytest.mark.skipif(os.getenv('OPERON_RUN_REAL')!='1',reason='Explicit real-model V2 gate')]
+pytestmark=[pytest.mark.anyio,pytest.mark.skipif(os.getenv('TASKFLOW_RUN_REAL')!='1',reason='Explicit real-model V2 gate')]
 
 async def run_v2(case,objective):
     before=snapshot_state();events=[]

@@ -13,7 +13,7 @@ from backend.app.workspace.seed import reset_demo_env
 @pytest.fixture
 def dataset(tmp_path, monkeypatch):
     reset_demo_env()
-    monkeypatch.setenv('OPERON_ARTIFACTS_DIR',str(tmp_path/'artifacts'))
+    monkeypatch.setenv('TASKFLOW_ARTIFACTS_DIR',str(tmp_path/'artifacts'))
     path=tmp_path/'input.csv'
     rows=['market,month,volume']+[f'Alpha,2026-08,{10+i}' for i in range(30)]+[f'Alpha,2026-09,{9+i}' for i in range(30)]+['Beta,2026-08,100','Beta,2026-09,1']
     path.write_text('\n'.join(rows)+'\n')

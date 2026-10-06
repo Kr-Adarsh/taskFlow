@@ -319,7 +319,7 @@ class GeminiProvider(LLMProvider):
         if not 1 <= self.max_rpm <= 12 or not 1 <= self.max_rpd <= 498 or not 0 < self.timeout <= 60 or not 128 <= self.max_output_tokens <= 4096:
             raise ValueError('Invalid Gemini provider limits')
         self.transport = transport
-        self.rate_db_path = Path(rate_db_path or load_env_var('OPERON_PROVIDER_LIMITS_DB', str(Path(__file__).resolve().parents[3] / 'data' / 'provider_limits.db')))
+        self.rate_db_path = Path(rate_db_path or load_env_var('TASKFLOW_PROVIDER_LIMITS_DB', str(Path(__file__).resolve().parents[3] / 'data' / 'provider_limits.db')))
         self.rate_key = hashlib.sha256((self.base_url + '\0' + self.api_key).encode()).hexdigest()
         self.usage = {'requests': 0, 'prompt_tokens': 0, 'completion_tokens': 0,
                       'total_tokens': 0, 'thought_tokens': 0, 'incomplete': False, 'provider_errors': []}

@@ -16,7 +16,7 @@ async def test_dashboard_task_graph_final_report_and_safe_text(real_workspace):
     set_runner_factory(lambda max_steps=20:AgentRunner(provider=provider,max_steps=max_steps,event_callback=broadcast_event))
     try:
         async with async_playwright() as playwright:
-            browser=await playwright.chromium.launch(executable_path=os.getenv('OPERON_CHROME_PATH','/usr/bin/google-chrome'),headless=True,args=['--no-sandbox'])
+            browser=await playwright.chromium.launch(executable_path=os.getenv('TASKFLOW_CHROME_PATH','/usr/bin/google-chrome'),headless=True,args=['--no-sandbox'])
             try:
                 page=await browser.new_page()
                 await page.goto(browser_manager.base_url+'/dashboard')

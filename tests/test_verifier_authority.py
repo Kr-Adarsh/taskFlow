@@ -34,7 +34,7 @@ class SchemaProvider(FakeProvider):
 @pytest.fixture
 def workspace(tmp_path, monkeypatch):
     path = tmp_path / 'authority.db'
-    monkeypatch.setenv('OPERON_DB_PATH', str(path))
+    monkeypatch.setenv('TASKFLOW_DB_PATH', str(path))
     seed_workspace(path, force_reseed=True)
     return path
 

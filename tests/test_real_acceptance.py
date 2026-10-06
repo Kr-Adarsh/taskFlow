@@ -24,16 +24,16 @@ from backend.app.workspace.db import get_db_connection
 from backend.app.workspace.models import InvoiceCreate
 from backend.app.workspace.service import create_invoice, list_documents, extract_document_text
 
-pytestmark = [pytest.mark.anyio, pytest.mark.skipif(os.getenv('OPERON_RUN_REAL') != '1', reason='Explicit real-model API opt-in required')]
+pytestmark = [pytest.mark.anyio, pytest.mark.skipif(os.getenv('TASKFLOW_RUN_REAL') != '1', reason='Explicit real-model API opt-in required')]
 INVOICE = 'Find the latest invoice from Acme Corp, extract the amount and due date, enter it into Finance, and verify that it was recorded correctly.'
 COMPLAINT = 'Read complaint 4821, identify the customer, check their CRM account, and if they are an Enterprise customer, create a high-priority support ticket summarizing the complaint.'
 ARTIFACT = Path('docs/validation/acceptance-results.json')
 
 @pytest.fixture
 def real_workspace(tmp_path, monkeypatch):
-    monkeypatch.setenv('OPERON_DB_PATH',str(tmp_path/'workspace.db'))
-    monkeypatch.setenv('OPERON_SCREENSHOTS_DIR',str(tmp_path/'screenshots'))
-    monkeypatch.setenv('OPERON_ARTIFACTS_DIR',str(tmp_path/'artifacts'))
+    monkeypatch.setenv('TASKFLOW_DB_PATH',str(tmp_path/'workspace.db'))
+    monkeypatch.setenv('TASKFLOW_SCREENSHOTS_DIR',str(tmp_path/'screenshots'))
+    monkeypatch.setenv('TASKFLOW_ARTIFACTS_DIR',str(tmp_path/'artifacts'))
     reset_demo_env()
     with socket.socket() as sock:
         sock.bind(('127.0.0.1',0)); port=sock.getsockname()[1]

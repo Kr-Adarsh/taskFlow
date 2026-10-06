@@ -8,7 +8,7 @@ from backend.app.agent.provider import get_default_provider
 from backend.app.agent.verifier import VerifierEngine
 
 pytestmark = [pytest.mark.anyio, pytest.mark.skipif(
-    os.getenv('OPERON_RUN_REAL') != '1', reason='Explicit real Groq gate')]
+    os.getenv('TASKFLOW_RUN_REAL') != '1', reason='Explicit real Groq gate')]
 
 
 async def test_real_crm_condition_is_supported_not_erased():

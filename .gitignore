@@ -1,11 +1,9 @@
-# Local settings and working files
 .env
 .env.*
 !.env.example
 pvt/
 docs/validation/
 
-# Dependencies and generated output
 .venv/
 __pycache__/
 *.py[cod]

@@ -1,5 +1,5 @@
 """
-Generic document search and reading tools for Operon.
+Generic document search and reading tools for TaskFlow.
 Operates on the workspace document library fixtures.
 """
 

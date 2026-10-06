@@ -1,5 +1,5 @@
 """
-Deterministic fault injection for Operon demo scenarios.
+Deterministic fault injection for TaskFlow demo scenarios.
 Enables controlled, visible transient failures (e.g. 503 before transaction commit)
 that consume exactly once, allowing the agent to observe failure and recover.
 """

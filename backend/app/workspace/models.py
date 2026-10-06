@@ -1,5 +1,5 @@
 """
-Domain models and schema definitions for the Operon workspace.
+Domain models and schema definitions for the TaskFlow workspace.
 """
 
 from decimal import Decimal

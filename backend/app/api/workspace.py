@@ -132,7 +132,7 @@ WORKSPACE_LAYOUT_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title} - Operon Workspace</title>
+    <title>{title} - TaskFlow Workspace</title>
     <style>
         :root {{
             --bg-color: #0f172a;

@@ -1,5 +1,5 @@
 """
-Deterministic seed and reset for Operon workspace.
+Deterministic seed and reset for TaskFlow workspace.
 Populates standard CRM accounts, baseline invoices, baseline support tickets,
 and indexes fixture documents.
 """

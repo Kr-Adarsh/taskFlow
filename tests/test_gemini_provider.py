@@ -20,7 +20,7 @@ PLAN = {'objective':'Read account','success_criteria':['Tier read'],'tasks':[{'t
 
 @pytest.fixture(autouse=True)
 def isolated_limits(tmp_path, monkeypatch):
-    monkeypatch.setenv('OPERON_PROVIDER_LIMITS_DB', str(tmp_path/'limits.db'))
+    monkeypatch.setenv('TASKFLOW_PROVIDER_LIMITS_DB', str(tmp_path/'limits.db'))
 
 
 def response(value, status='completed', prompt=3, completion=4, total=None):

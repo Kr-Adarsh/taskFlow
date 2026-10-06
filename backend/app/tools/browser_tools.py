@@ -10,7 +10,7 @@ from backend.app.tools.base import ToolResult
 
 class BrowserManager:
     def __init__(self, base_url=None):
-        self.base_url = (base_url or os.getenv("OPERON_WORKSPACE_URL", "http://127.0.0.1:8000")).rstrip("/")
+        self.base_url = (base_url or os.getenv("TASKFLOW_WORKSPACE_URL", "http://127.0.0.1:8000")).rstrip("/")
         self._playwright = self._browser = self._context = self._page = None
         self._elements = {}
         self._blocked = []
@@ -21,7 +21,7 @@ class BrowserManager:
 
     @property
     def screenshot_root(self):
-        return Path(os.getenv("OPERON_SCREENSHOTS_DIR", str(Path(__file__).resolve().parents[3] / "data" / "screenshots"))).resolve()
+        return Path(os.getenv("TASKFLOW_SCREENSHOTS_DIR", str(Path(__file__).resolve().parents[3] / "data" / "screenshots"))).resolve()
 
     async def bind_run(self, run_id, token):
         await self.close()
@@ -68,9 +68,9 @@ class BrowserManager:
             return
         await self.close()
         self._playwright = await async_playwright().start()
-        executable = os.getenv("OPERON_CHROME_PATH", "/usr/bin/google-chrome")
+        executable = os.getenv("TASKFLOW_CHROME_PATH", "/usr/bin/google-chrome")
         self._browser = await self._playwright.chromium.launch(executable_path=executable, headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
-        headers = {"X-Operon-Run": self.run_id, "X-Operon-Lease": self._lease_token} if self.run_id else {}
+        headers = {"X-TaskFlow-Run": self.run_id, "X-TaskFlow-Lease": self._lease_token} if self.run_id else {}
         self._context = await self._browser.new_context(extra_http_headers=headers, service_workers="block")
         await self._context.route("**/*", self._route_request)
         self._page = await self._context.new_page()
@@ -170,7 +170,7 @@ class BrowserManager:
                     let id = el.id || el.name || ('element_' + index);
                     if (used.has(id)) id += '_' + index;
                     used.add(id);
-                    el.setAttribute('data-operon-element', id);
+                    el.setAttribute('data-taskflow-element', id);
                     elements.push({id: '@' + id, tag: el.tagName.toLowerCase(), type: el.type || '',
                         label: el.labels?.[0]?.textContent.trim() || el.getAttribute('aria-label') || el.textContent.trim() || el.placeholder || '',
                         value: el.value || el.getAttribute('href') || '', required: !!el.required, disabled: el.matches(':disabled'),
@@ -196,7 +196,7 @@ class BrowserManager:
         if element_id not in self._elements:
             raise ValueError("Element was not present in the current observation")
         page = await self.get_page()
-        element = page.locator('[data-operon-element=' + json.dumps(element_id.removeprefix("@")) + ']')
+        element = page.locator('[data-taskflow-element=' + json.dumps(element_id.removeprefix("@")) + ']')
         if await element.count() != 1 or not await element.is_visible() or await element.is_disabled():
             raise ValueError("Element is stale, ambiguous or unavailable")
         return element
@@ -238,7 +238,7 @@ class BrowserManager:
             form = await element.evaluate("""el => el.form && el.type === 'submit' ? {
                 method: el.form.method.toUpperCase(), valid: el.form.checkValidity(),
                 required_invalid: [...el.form.elements].filter(x => x.required && !x.disabled && x.willValidate && !x.validity.valid)
-                    .map(x => ({id: '@' + (x.getAttribute('data-operon-element') || x.id || x.name),
+                    .map(x => ({id: '@' + (x.getAttribute('data-taskflow-element') || x.id || x.name),
                                 label: x.labels?.[0]?.textContent.trim() || x.getAttribute('aria-label') || x.placeholder || '',
                                 message: x.validationMessage})),
                 invalid: [...el.form.elements].filter(x=>x.validity && !x.validity.valid).map(x=>({id:x.id,message:x.validationMessage}))

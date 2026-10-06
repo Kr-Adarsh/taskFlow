@@ -1,5 +1,5 @@
 """
-Pydantic contracts and schemas for Operon Agent runtime.
+Pydantic contracts and schemas for TaskFlow Agent runtime.
 Defines AgentDecision, TaskPlan, WorkingMemory, and VerificationResult.
 """
 

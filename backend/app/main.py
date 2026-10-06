@@ -1,5 +1,5 @@
 """
-Main FastAPI application entry point for Operon.
+Main FastAPI application entry point for TaskFlow.
 Mounts workspace endpoints, agent run control, and SSE streams.
 """
 
@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
         await browser_manager.close()
 
 app = FastAPI(
-    title="Operon Autonomous AI Worker",
+    title="TaskFlow - Autonomous AI Task Worker",
     version="2.0.0",
     lifespan=lifespan
 )
@@ -50,7 +50,7 @@ DASHBOARD_FILE = Path(__file__).resolve().parent / "static" / "dashboard.html"
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "product": "Operon", "version": "2.0.0"}
+    return {"status": "ok", "product": "TaskFlow", "version": "2.0.0"}
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
 @app.middleware("http")
 async def mutation_context(request, call_next):
-    owner = mutation_owner.set((request.headers.get("x-operon-run"), request.headers.get("x-operon-lease")))
+    owner = mutation_owner.set((request.headers.get("x-taskflow-run"), request.headers.get("x-taskflow-lease")))
     try:
         if request.method == "POST" and request.url.path.startswith(("/api/workspace/", "/workspace/")):
             from backend.app.workspace.db import get_db_connection

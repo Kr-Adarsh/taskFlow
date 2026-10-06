@@ -29,7 +29,7 @@ class ContractProvider(FakeProvider):
 
 @pytest.fixture
 def workspace(tmp_path, monkeypatch):
-    monkeypatch.setenv('OPERON_DB_PATH', str(tmp_path / 'verify.db'))
+    monkeypatch.setenv('TASKFLOW_DB_PATH', str(tmp_path / 'verify.db'))
     reset_demo_env()
 
 

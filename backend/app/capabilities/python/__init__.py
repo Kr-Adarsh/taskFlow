@@ -80,7 +80,7 @@ class PythonCapability:
                 datasets[document_id] = (path, frame)
             if not datasets:
                 raise ValueError('At least one profiled CSV input is required')
-            with tempfile.TemporaryDirectory(prefix='operon-sample-') as temporary:
+            with tempfile.TemporaryDirectory(prefix='taskflow-sample-') as temporary:
                 sample_paths = {}
                 for index, (document_id, (_, frame)) in enumerate(datasets.items()):
                     sample = frame.iloc[sorted({round(i * (len(frame) - 1) / 19) for i in range(20)})]

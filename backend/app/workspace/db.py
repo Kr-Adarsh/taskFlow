@@ -1,5 +1,5 @@
 """
-SQLite database management for Operon workspace.
+SQLite database management for TaskFlow workspace.
 Uses parameterized queries, WAL mode, foreign keys, and strict constraints.
 """
 
@@ -11,7 +11,7 @@ from contextlib import contextmanager
 DEFAULT_DB_PATH = Path(__file__).resolve().parents[3] / "data" / "workspace.db"
 
 def get_db_path() -> Path:
-    override = os.getenv("OPERON_DB_PATH")
+    override = os.getenv("TASKFLOW_DB_PATH")
     if override:
         return Path(override)
     return DEFAULT_DB_PATH

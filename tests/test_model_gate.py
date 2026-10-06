@@ -22,7 +22,7 @@ async def browser_cleanup():
     finally:
         await browser_manager.close()
 
-@pytest.mark.skipif(os.getenv("OPERON_RUN_REAL") != "1", reason="Explicit real-model opt-in required")
+@pytest.mark.skipif(os.getenv("TASKFLOW_RUN_REAL") != "1", reason="Explicit real-model opt-in required")
 @pytest.mark.anyio
 async def test_model_gate_planner_and_executor(real_workspace, browser_cleanup):
     provider = get_default_provider()

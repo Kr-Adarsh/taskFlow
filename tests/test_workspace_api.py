@@ -25,7 +25,7 @@ def test_workspace_html_pages_render():
         res = client.get(page)
         assert res.status_code == 200
         assert "text/html" in res.headers["content-type"]
-        assert "Operon Workspace" in res.text
+        assert "TaskFlow Workspace" in res.text
 
 def test_finance_form_submission_success():
     data = {

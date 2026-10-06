@@ -27,7 +27,7 @@ async def bounded_read(stream, limit):
 
 
 def artifact_root():
-    return Path(os.getenv('OPERON_ARTIFACTS_DIR', Path(__file__).resolve().parents[4] / 'data' / 'artifacts')).resolve()
+    return Path(os.getenv('TASKFLOW_ARTIFACTS_DIR', Path(__file__).resolve().parents[4] / 'data' / 'artifacts')).resolve()
 
 
 async def isolated_stage(code, input_paths, destination, stage, timeout=TIMEOUT_SECONDS):
@@ -35,7 +35,7 @@ async def isolated_stage(code, input_paths, destination, stage, timeout=TIMEOUT_
     if not executable:
         return {'ok': False, 'error': 'Sandbox unavailable: install bubblewrap; unsafe execution is disabled', 'error_code': 'SANDBOX_UNAVAILABLE', 'category': 'SANDBOX_UNAVAILABLE'}
     destination.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix='operon-job-') as temporary:
+    with tempfile.TemporaryDirectory(prefix='taskflow-job-') as temporary:
         job = Path(temporary)
         input_dir = job / 'inputs'
         input_dir.mkdir()

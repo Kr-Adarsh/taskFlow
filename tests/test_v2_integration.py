@@ -67,7 +67,7 @@ async def test_complaint_same_graph_real_browser_and_conditional_no_op(real_work
 
 
 async def test_dataset_same_graph_full_sandbox_and_independent_verifier(real_workspace,monkeypatch):
-    monkeypatch.setenv('OPERON_ARTIFACTS_DIR',str(real_workspace/'artifacts'))
+    monkeypatch.setenv('TASKFLOW_ARTIFACTS_DIR',str(real_workspace/'artifacts'))
     objective='Identify the region with the largest absolute revenue decline in sales.csv from 2026-08 to 2026-09, including the decline.'
     code="""df=pd.read_csv(inputs['sales.csv'])
 totals=df.groupby(['region','month'])['revenue'].sum().unstack()
@@ -94,7 +94,7 @@ result={'summary':'Compared full-data revenue totals','metrics':{'region':str(de
 
 
 async def test_computation_cannot_complete_with_wrong_authoritative_metrics(real_workspace,monkeypatch):
-    monkeypatch.setenv('OPERON_ARTIFACTS_DIR',str(real_workspace/'artifacts'))
+    monkeypatch.setenv('TASKFLOW_ARTIFACTS_DIR',str(real_workspace/'artifacts'))
     objective='Identify the region with the largest revenue decline between 2026-08 and 2026-09'
     steps=[plan(objective,'python'),act('profile_dataset',document_id='sales.csv'),
         act('execute_python',document_ids=['sales.csv'],code="result={'region':'North','decline':1}"),

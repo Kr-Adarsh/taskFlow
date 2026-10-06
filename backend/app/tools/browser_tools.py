@@ -18,6 +18,16 @@ class BrowserManager:
         self.run_id = None
         self._lease_token = None
         self.last_screenshot_path = None
+        self.ui_theme = "light"
+
+    async def set_ui_theme(self, theme):
+        """Keep genuine browser captures in the dashboard's presentation theme."""
+        if theme not in ("light", "dark"):
+            raise ValueError("Invalid browser theme")
+        self.ui_theme = theme
+        if self._page and not self._page.is_closed():
+            await self._page.emulate_media(color_scheme=theme)
+            await self._page.evaluate("theme => window.TaskFlowTheme?.set(theme)", theme)
 
     @property
     def screenshot_root(self):
@@ -71,7 +81,8 @@ class BrowserManager:
         executable = os.getenv("TASKFLOW_CHROME_PATH", "/usr/bin/google-chrome")
         self._browser = await self._playwright.chromium.launch(executable_path=executable, headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
         headers = {"X-TaskFlow-Run": self.run_id, "X-TaskFlow-Lease": self._lease_token} if self.run_id else {}
-        self._context = await self._browser.new_context(extra_http_headers=headers, service_workers="block")
+        self._context = await self._browser.new_context(extra_http_headers=headers, service_workers="block",
+                                                       color_scheme=self.ui_theme)
         await self._context.route("**/*", self._route_request)
         self._page = await self._context.new_page()
         self._page.set_default_timeout(10000)

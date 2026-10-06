@@ -1,546 +1,189 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskFlow - Autonomous AI Task Worker</title>
-    <style>
-        :root {
-            --bg-base: #090d16;
-            --bg-surface: #0f172a;
-            --bg-card: #1e293b;
-            --border-subtle: #334155;
-            --border-focus: #38bdf8;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #38bdf8;
-            --accent-glow: rgba(56, 189, 248, 0.25);
-            --success: #10b981;
-            --success-glow: rgba(16, 185, 129, 0.25);
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --purple: #a855f7;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--bg-base);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-        }
-
-        /* Top Bar */
-        header {
-            background-color: var(--bg-surface);
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 12px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 50;
-        }
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .brand-logo {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #38bdf8, #818cf8);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: #0f172a;
-            font-size: 1.1rem;
-            box-shadow: 0 0 15px var(--accent-glow);
-        }
-        .brand-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .brand-badge {
-            font-size: 0.7rem;
-            background: #1e3a5f;
-            color: #38bdf8;
-            padding: 2px 8px;
-            border-radius: 12px;
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-        }
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-        .pill {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: #1e293b;
-            border: 1px solid var(--border-subtle);
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: var(--success);
-            box-shadow: 0 0 8px var(--success-glow);
-        }
-        .status-badge {
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 4px 12px;
-            border-radius: 20px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            background: #334155;
-            color: #cbd5e1;
-        }
-        .status-running { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #38bdf8; animation: pulse 1.5s infinite; }
-        .status-verifying { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid #a855f7; }
-        .status-completed { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; }
-        .status-failed { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid #ef4444; }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
-        button.btn-subtle {
-            background: #1e293b;
-            border: 1px solid var(--border-subtle);
-            color: var(--text-main);
-            padding: 6px 14px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        button.btn-subtle:hover {
-            border-color: var(--accent);
-            background: #273549;
-        }
-
-        /* Main Workspace Layout */
-        main {
-            display: grid;
-            grid-template-columns: 480px 1fr;
-            flex: 1;
-            height: calc(100vh - 61px);
-        }
-
-        /* Left Column: Observability & Control */
-        .left-col {
-            background: #0d1322;
-            border-right: 1px solid var(--border-subtle);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .card-title {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        /* Objective Box */
-        textarea.objective-input {
-            width: 100%;
-            height: 75px;
-            background: #090e1a;
-            border: 1px solid var(--border-subtle);
-            border-radius: 6px;
-            color: var(--text-main);
-            padding: 10px;
-            font-family: inherit;
-            font-size: 0.9rem;
-            resize: none;
-            outline: none;
-        }
-        textarea.objective-input:focus {
-            border-color: var(--accent);
-        }
-        .preset-buttons {
-            display: flex;
-            gap: 8px;
-        }
-        .btn-preset {
-            background: #141e33;
-            border: 1px solid #243452;
-            color: #93c5fd;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            cursor: pointer;
-        }
-        .btn-preset:hover {
-            background: #1e3052;
-        }
-        .btn-run {
-            background: linear-gradient(135deg, #0284c7, #2563eb);
-            color: #ffffff;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-            transition: all 0.2s;
-        }
-        .btn-run:hover {
-            filter: brightness(1.1);
-        }
-        .btn-run:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Working Memory Panel */
-        .memory-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-        .fact-box {
-            background: #0b1120;
-            padding: 8px 10px;
-            border-radius: 6px;
-            border: 1px solid #202d44;
-        }
-        .fact-key {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-        .fact-val {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--accent);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Verification Card */
-        .verification-card {
-            border-left: 4px solid #334155;
-            transition: all 0.3s;
-        }
-        .verification-card.verified { border-left-color: var(--success); }
-        .verification-card.failed { border-left-color: var(--danger); }
-        .criterion-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 6px 0;
-            border-bottom: 1px solid #24344d;
-            font-size: 0.8rem;
-        }
-        .criterion-badge {
-            font-size: 0.7rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        .badge-pass { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-        .badge-fail { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-
-        /* Execution Timeline */
-        .timeline-card {
-            flex: 1;
-            min-height: 250px;
-            display: flex;
-            flex-direction: column;
-        }
-        .timeline-stream {
-            flex: 1;
-            overflow-y: auto;
-            max-height: 380px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding-right: 4px;
-        }
-        .timeline-item {
-            background: #0b1120;
-            border: 1px solid #1f2c42;
-            border-radius: 6px;
-            padding: 10px 12px;
-            font-size: 0.8rem;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .timeline-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .timeline-type {
-            font-weight: 700;
-            font-size: 0.75rem;
-            padding: 1px 6px;
-            border-radius: 3px;
-        }
-        .type-PLAN { background: #3b82f6; color: #fff; }
-        .type-ACTION { background: #0284c7; color: #fff; }
-        .type-OBSERVATION { background: #334155; color: #94a3b8; }
-        .type-RETRY { background: #d97706; color: #fff; }
-        .type-ERROR { background: #dc2626; color: #fff; }
-        .type-VERIFICATION { background: #9333ea; color: #fff; }
-        .type-COMPLETE { background: #16a34a; color: #fff; }
-
-        .timeline-body {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: #cbd5e1;
-            word-break: break-all;
-        }
-
-        /* Right Column: Embedded Workspace & Live Preview */
-        .right-col {
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-surface);
-        }
-        .workspace-tabs {
-            background: #090e1a;
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 8px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .tab-group {
-            display: flex;
-            gap: 8px;
-        }
-        .ws-tab {
-            background: transparent;
-            border: 1px solid transparent;
-            color: var(--text-muted);
-            padding: 6px 14px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-        }
-        .ws-tab.active {
-            background: #1e293b;
-            color: var(--accent);
-            border-color: var(--border-subtle);
-        }
-        .iframe-container {
-            flex: 1;
-            position: relative;
-            background: #0b1120;
-        }
-        iframe.ws-frame {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        .screenshot-view {
-            width: 100%;
-            height: 100%;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: #050811;
-            padding: 20px;
-        }
-        .screenshot-view img {
-            max-width: 100%;
-            max-height: 100%;
-            border-radius: 8px;
-            border: 1px solid var(--border-subtle);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>TaskFlow — Autonomous AI Task Worker</title>
+<script src="/static/theme.js"></script>
+<link rel="stylesheet" href="/static/theme.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Inter","Avenir Next",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.55}button,input,textarea,summary{font:inherit}button,a,summary{-webkit-tap-highlight-color:transparent}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.5}button:focus-visible,a:focus-visible,summary:focus-visible,textarea:focus-visible{outline:2px solid var(--focus);outline-offset:3px}button{color:inherit}p,h1,h2,h3{margin:0}h2{font-size:15px;font-weight:650;letter-spacing:-.02em}h3{font-size:14px}a{color:var(--accent-ink)}.muted{color:var(--muted)}.eyebrow{font-size:11px;font-weight:650;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.empty{padding:12px 0;color:var(--muted);font-size:13px}.hidden{display:none!important}.wrap{overflow-wrap:anywhere;white-space:pre-wrap}svg{width:18px;height:18px;flex-shrink:0}
+.topbar{border-bottom:1px solid var(--line);background:var(--paper);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit}.brand-mark{width:38px;height:38px;border-radius:12px;background:var(--accent);color:#302d1c;display:grid;place-items:center;font-size:15px;font-weight:800;letter-spacing:-1px}.brand-name{font-size:20px;font-weight:750;letter-spacing:-.05em}.brand-subtitle{display:block;font-size:11px;color:var(--muted)}.header-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:10px}.model-label{max-width:270px;font-size:12px;color:var(--muted);overflow-wrap:anywhere}.status-badge{display:inline-flex;align-items:center;gap:7px;border-radius:99px;padding:6px 11px;font-size:12px;font-weight:600;background:var(--soft);white-space:nowrap}.status-badge:before{content:"";width:6px;height:6px;flex-shrink:0;border-radius:50%;background:var(--muted)}.status-running,.status-planning,.status-verifying{background:var(--accent-soft);color:var(--accent-ink)}.status-running:before,.status-planning:before,.status-verifying:before{background:var(--focus);animation:breathe 2s ease-in-out infinite}.status-completed{color:var(--good);background:var(--good-soft)}.status-completed:before{background:var(--good)}.status-failed{color:var(--bad);background:var(--bad-soft)}.status-failed:before{background:var(--bad)}.status-waiting_for_clarification,.status-needs_clarification{background:var(--accent-soft);color:var(--accent-ink)}
+.btn{border:1px solid var(--line);background:var(--paper);padding:8px 12px;border-radius:10px;font-weight:550;font-size:12px;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:background .16s,border-color .16s,transform .16s}.btn:hover{background:var(--soft);border-color:var(--muted)}.btn:active{transform:translateY(1px)}.btn-icon{width:35px;height:35px;padding:7px}.tools{position:relative}.tools>summary{list-style:none}.tools>summary::-webkit-details-marker{display:none}.tools-body{position:absolute;right:0;top:calc(100% + 10px);z-index:20;width:290px;padding:18px;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}.tools-body p{margin:7px 0 12px;font-size:12px;color:var(--muted)}.tools-body .btn{width:100%;margin-top:6px}.tools-body hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+.shell{max-width:1720px;margin:auto;padding:28px;display:flex;align-items:flex-start;gap:24px}.sidebar{flex:0 0 360px;min-width:0;display:flex;flex-direction:column;gap:18px}.main-column{flex:1;min-width:0;display:flex;flex-direction:column;gap:20px}.panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:22px;min-width:0;box-shadow:var(--shadow)}.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.intro{margin:9px 0 16px;font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;font-size:29px;line-height:1.16;font-weight:500;letter-spacing:-.04em}.objective-input{display:block;resize:vertical;width:100%;min-height:138px;max-height:380px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);line-height:1.65;font-size:14px}.objective-input::placeholder{color:var(--muted)}.objective-input:focus{border-color:var(--focus)}.examples{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 18px}.example{font-size:11px;border:1px solid var(--line);background:transparent;border-radius:8px;padding:5px 8px;color:var(--muted)}.example:hover{color:var(--ink);background:var(--soft)}.btn-run{width:100%;padding:12px 16px;border:0;background:var(--accent);color:#332d1b;border-radius:11px;font-size:14px;font-weight:650;display:flex;justify-content:center;align-items:center;gap:10px;transition:filter .16s,transform .16s}.btn-run:hover{filter:brightness(.96)}.hint{font-size:11px;color:var(--muted);margin-top:9px}.activity{font-size:13px;margin:10px 0 15px;overflow-wrap:anywhere}.run-stats{display:flex;gap:20px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:16px}.stat-value{display:block;font-size:19px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.03em}.stat-label{font-size:11px;color:var(--muted)}.task{padding:13px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.task:last-child{border:0;padding-bottom:0}.task-top{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}.task-goal{font-size:13px;font-weight:550;min-width:0}.task .status-badge{font-size:10px;padding:3px 8px}.task-error{font-size:12px;color:var(--bad);margin-top:7px}.disclosure{border-top:1px solid var(--line);padding-top:14px;margin-top:17px}.disclosure>summary{cursor:pointer;font-size:13px;font-weight:550}.disclosure>summary .muted{font-size:11px;margin-left:6px}.memory-grid{display:flex;flex-direction:column;gap:10px;margin-top:13px}.fact-box{padding:11px 12px;background:var(--bg);border-radius:10px;overflow-wrap:anywhere}.fact-key{font-size:12px;font-weight:600}.fact-val{font-size:12px;color:var(--muted);margin-top:5px;white-space:pre-wrap;overflow-wrap:anywhere}.details{margin-top:8px;font-size:11px;color:var(--muted)}.details summary{cursor:pointer}.raw{margin:8px 0 0;padding:12px;border-radius:9px;background:var(--bg);color:var(--muted);font:11px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;max-height:340px;overflow-y:auto}.criterion{padding:12px 0;border-top:1px solid var(--line);font-size:12px;overflow-wrap:anywhere}.criterion-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-weight:550}.criterion-result{font-size:11px;font-weight:650;flex-shrink:0}.criterion-result.pass{color:var(--good)}.criterion-result.fail{color:var(--bad)}.criterion p{color:var(--muted);margin-top:4px}.report-header{display:flex;align-items:center;gap:10px;margin-bottom:9px}.report-message{margin:10px 0;font-size:13px;overflow-wrap:anywhere}.report-meta{font-size:12px;color:var(--muted);margin-bottom:12px}.metrics{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.metric{background:var(--bg);border-radius:10px;padding:10px 12px;flex:1 1 110px;min-width:0;overflow-wrap:anywhere}.metric strong{display:block;font-size:16px}.metric small{font-size:11px;color:var(--muted)}.artifact-link{display:block;margin-top:9px;font-size:12px}.outcome-panel{border-left:3px solid var(--line)}.outcome-panel[data-result="completed"]{border-left-color:var(--good)}.outcome-panel[data-result="failed"]{border-left-color:var(--bad)}
+.workspace-panel{padding:0;overflow:hidden}.workspace-heading{padding:19px 22px 13px;display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.workspace-heading p{font-size:11px;color:var(--muted);margin-top:3px}.view-switch{display:flex;padding:3px;background:var(--soft);border-radius:9px;gap:2px}.view-switch button{border:0;background:transparent;color:var(--muted);border-radius:7px;padding:5px 10px;font-size:11px;white-space:nowrap}.view-switch button[aria-pressed="true"]{color:var(--ink);background:var(--paper);box-shadow:0 1px 4px #0000000b}.workspace-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:0 22px 13px;align-items:center;border-bottom:1px solid var(--line)}.ws-tab{border:0;border-radius:8px;padding:7px 11px;background:transparent;color:var(--muted);font-size:12px}.ws-tab.active{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}.ws-tab:hover{background:var(--soft)}.follow-btn{margin-left:auto;font-size:11px;border:0;background:transparent;color:var(--muted);padding:6px 0}.follow-btn[aria-pressed="true"]{color:var(--accent-ink)}.iframe-container{position:relative;min-height:420px;height:510px;background:var(--bg)}.ws-frame{width:100%;height:100%;border:0;display:block}.screenshot-view{width:100%;height:100%;display:none;align-items:flex-start;justify-content:center;padding:15px;overflow:auto;background:var(--bg)}.screenshot-view img{width:auto;max-width:100%;height:auto;border:1px solid var(--line);border-radius:10px}.screenshot-empty{text-align:center;margin:auto;color:var(--muted);max-width:300px;font-size:13px}.workspace-caption{padding:9px 22px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.timeline-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.timeline-heading h2{margin-right:auto}.timeline-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.timeline-controls button{font-size:11px}.event-count{color:var(--muted);font-size:11px}.timeline-stream{max-height:500px;overflow-y:auto;scrollbar-gutter:stable;padding-right:6px}.timeline-empty{padding:25px 10px;text-align:center;color:var(--muted);font-size:13px}.timeline-item{position:relative;padding:14px 0 14px 40px;min-width:0;animation:arrive .18s ease-out}.timeline-item:not(:last-child):before{content:"";position:absolute;left:13px;top:39px;bottom:-10px;width:1px;background:var(--line)}.step-number{position:absolute;left:0;top:15px;width:27px;height:27px;display:grid;place-items:center;border:1px solid var(--line);border-radius:9px;font-size:11px;background:var(--paper);color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}.step-success .step-number{color:var(--good);background:var(--good-soft);border-color:transparent}.step-failed .step-number{color:var(--bad);background:var(--bad-soft);border-color:transparent}.timeline-header{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.timeline-title{font-size:13px;font-weight:600;overflow-wrap:anywhere;min-width:0}.timeline-time{font-size:10px;color:var(--muted);flex-shrink:0;font-variant-numeric:tabular-nums}.timeline-body{font-size:12px;margin-top:5px;color:var(--muted);overflow-wrap:anywhere;white-space:pre-wrap}.step-outcome{font-size:11px;margin-top:6px;overflow-wrap:anywhere}.step-outcome.success{color:var(--good)}.step-outcome.error{color:var(--bad)}.event-tag{font-size:10px;color:var(--muted);margin-top:5px}.notice{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:60;padding:11px 18px;max-width:calc(100vw - 32px);background:var(--ink);color:var(--paper);border-radius:12px;font-size:13px;box-shadow:var(--shadow);overflow-wrap:anywhere}.notice[hidden]{display:none}
+@keyframes arrive{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}@keyframes breathe{50%{opacity:.45}}
+@media(min-width:1400px){.sidebar{flex-basis:390px}.iframe-container{height:560px}}@media(max-width:1000px){.shell{gap:18px;padding:20px}.sidebar{flex-basis:310px}.panel{padding:18px}.topbar{padding:14px 20px}.intro{font-size:26px}.workspace-heading{padding:17px}.workspace-tabs{padding:0 17px 12px}.model-label{max-width:200px}.brand-subtitle{display:none}}@media(max-width:760px){.shell{flex-direction:column;padding:16px;gap:18px}.sidebar,.main-column{flex:auto;width:100%}.sidebar{display:grid;grid-template-columns:1fr 1fr;gap:14px}.composer,.outcome-panel{grid-column:1/-1}.topbar{padding:13px 16px;align-items:flex-start;gap:12px}.header-actions{gap:7px}.model-label{display:none}.brand-name{font-size:18px}.brand-mark{width:34px;height:34px}.status-badge{font-size:11px}.tools-body{width:260px}.iframe-container{height:480px}.timeline-stream{max-height:440px}}@media(max-width:480px){.sidebar{display:flex}.panel{padding:17px}.workspace-panel{padding:0}.brand-subtitle{display:none}.brand{gap:8px}.header-actions .tools>summary{font-size:0;width:34px;height:34px;padding:7px}.workspace-heading{flex-wrap:wrap}.workspace-tabs{gap:3px}.ws-tab{padding:7px 8px}.follow-btn{margin-left:5px}.iframe-container{height:460px}.timeline-header{align-items:flex-start}.timeline-time{font-size:9px}.run-stats{gap:24px}.topbar{align-items:center}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
 </head>
 <body>
-
-    <!-- Header -->
-    <header>
-        <div class="brand">
-            <div class="brand-logo">O</div>
-            <div class="brand-title">
-                TaskFlow
-                <span class="brand-badge">Autonomous Worker</span>
-            </div>
-        </div>
-        <div class="header-actions">
-            <div class="pill">
-                <span class="dot"></span>
-                <span>Ollama ministral-3:3b</span>
-            </div>
-            <div id="system_status" class="status-badge">IDLE</div>
-            <button class="btn-subtle" id="btn_arm_fault" onclick="armFault503()">Arm 503 Fault</button>
-            <button class="btn-subtle" onclick="resetEnvironment()">Reset Demo</button>
-        </div>
-    </header>
-
-    <!-- Main 2-Column Interface -->
-    <main>
-        <!-- Left Column: Observability & Control -->
-        <div class="left-col">
-            <!-- Objective Input -->
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-title">Objective Prompt</span>
-                </div>
-                <textarea id="objective_input" class="objective-input" placeholder="Enter natural language objective..."></textarea>
-                <div class="preset-buttons">
-                    <button class="btn-preset" onclick="setPreset(1)">Demo 1: Invoice -> Finance</button>
-                    <button class="btn-preset" onclick="setPreset(2)">Demo 2: Complaint -> Support</button>
-                    <button class="btn-preset" onclick="setPreset(3)">Demo 3: CSV analysis</button>
-                </div>
-                <button class="btn-run" id="btn_execute" onclick="startRun()">Execute Objective</button>
-            </div>
-
-            <div class="card">
-                <div class="card-header"><span class="card-title">Tasks</span></div>
-                <div id="task_graph">Awaiting plan</div>
-            </div>
-            <div class="card">
-                <div class="card-header"><span class="card-title">Final evidence</span></div>
-                <div id="final_report">Awaiting verification</div>
-            </div>
-
-            <!-- Working Memory -->
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-title">Working Memory</span>
-                    <span id="memory_count" style="font-size: 0.75rem; color: var(--text-muted);">0 facts</span>
-                </div>
-                <div class="memory-grid" id="memory_grid">
-                    <div class="fact-box">
-                        <div class="fact-key">Status</div>
-                        <div class="fact-val">Awaiting run</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Verification & Evidence -->
-            <div class="card verification-card" id="verification_card">
-                <div class="card-header">
-                    <span class="card-title">Independent Verification</span>
-                    <span id="verif_status" style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">NOT STARTED</span>
-                </div>
-                <div id="criteria_list" style="display: flex; flex-direction: column;">
-                    <div style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">
-                        Verifier independently validates ground truth upon task completion.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Execution Timeline -->
-            <div class="card timeline-card">
-                <div class="card-header">
-                    <span class="card-title">Execution Timeline</span>
-                    <span id="event_count" style="font-size: 0.75rem; color: var(--text-muted);">0 events</span>
-                </div>
-                <div class="timeline-stream" id="timeline_stream">
-                    <div style="color: var(--text-muted); font-size: 0.8rem; font-style: italic; text-align: center; margin-top: 40px;">
-                        Event stream idle. Enter an objective and click Execute.
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Column: Live Workspace Apps & Browser Screenshot -->
-        <div class="right-col">
-            <div class="workspace-tabs">
-                <div class="tab-group">
-                    <button class="ws-tab active" id="tab_btn_finance" onclick="switchWsTab('/workspace/finance', this)">Finance App</button>
-                    <button class="ws-tab" id="tab_btn_crm" onclick="switchWsTab('/workspace/crm', this)">CRM App</button>
-                    <button class="ws-tab" id="tab_btn_support" onclick="switchWsTab('/workspace/support', this)">Support App</button>
-                    <button class="ws-tab" id="tab_btn_documents" onclick="switchWsTab('/workspace/documents', this)">Documents</button>
-                </div>
-                <div>
-                    <button class="btn-subtle" id="toggle_view_btn" onclick="toggleScreenshotView()">View Agent Screenshot</button>
-                </div>
-            </div>
-            <div class="iframe-container">
-                <iframe id="ws_iframe" class="ws-frame" src="/workspace/finance"></iframe>
-                <div id="screenshot_view" class="screenshot-view">
-                    <img id="agent_screenshot" src="" alt="Agent Browser Screenshot" />
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <script>
-let currentRunId = null, eventSource = null, showingScreenshot = false, eventCounter = 0;
+<header class="topbar">
+  <a class="brand" href="/dashboard"><span class="brand-mark" aria-hidden="true">TF</span><span><span class="brand-name">TaskFlow</span><span class="brand-subtitle">Autonomous task worker</span></span></a>
+  <div class="header-actions">
+    <span id="model_label" class="model-label" title="The provider and model reported by the actual run">No run selected</span>
+    <span id="system_status" class="status-badge status-idle" role="status">Ready</span>
+    <button class="btn btn-icon" id="theme_toggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20.3 15.3A8.5 8.5 0 0 1 8.7 3.7 8.5 8.5 0 1 0 20.3 15.3Z"/></svg></button>
+    <details class="tools"><summary class="btn" title="Run tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--paper)"/><circle cx="15" cy="17" r="3" fill="var(--paper)"/></svg>Run tools</summary><div class="tools-body"><h3>Recovery test</h3><p>Optional: make the next Finance submit fail once with a 503 before anything is saved. The agent must decide how to recover.</p><button class="btn" id="btn_arm_fault" onclick="armFault503()">Test one failed submit</button><hr><h3>Reset workspace</h3><p>Restore the sample company records. Saved run history is kept.</p><button class="btn" id="btn_reset" onclick="resetEnvironment()">Reset workspace</button></div></details>
+  </div>
+</header>
+<main class="shell">
+  <aside class="sidebar" aria-label="Task and results">
+    <section class="panel composer"><div class="eyebrow">Your objective</div><h1 class="intro">What needs doing?</h1><label class="hidden" for="objective_input">Describe your objective</label><textarea id="objective_input" class="objective-input" placeholder="Describe the outcome you want. I'll work through the steps." maxlength="4000"></textarea><div class="examples" aria-label="Example objectives"><button class="example" onclick="setPreset(1)">Invoice intake</button><button class="example" onclick="setPreset(2)">Customer support</button><button class="example" onclick="setPreset(3)">Sales analysis</button></div><button id="btn_execute" class="btn-run" onclick="startRun()" disabled><span id="run_button_label">Start task</span><span aria-hidden="true">↗</span></button><p class="hint">Examples fill the objective. You choose when to start.</p></section>
+    <section class="panel"><div class="panel-heading"><h2>Run progress</h2><span id="progress_label" class="eyebrow">Ready</span></div><p id="activity_text" class="activity muted">Decisions and tool actions will appear as they happen.</p><div class="run-stats"><div><span class="stat-value" id="decision_count">0</span><span class="stat-label">Decisions</span></div><div><span class="stat-value" id="action_count">0</span><span class="stat-label">Tool actions</span></div><div><span class="stat-value" id="elapsed_time">—</span><span class="stat-label">Elapsed</span></div></div><div id="task_graph"><p class="empty">The plan will appear here.</p></div><details class="disclosure"><summary>Retained evidence <span id="memory_count" class="muted">0 sources</span></summary><div id="memory_grid" class="memory-grid"><p class="empty">Source observations will appear during a run.</p></div></details></section>
+    <section class="panel" id="verification_card"><div class="panel-heading"><h2>Independent checks</h2><span id="verif_status" class="eyebrow">Not started</span></div><div id="criteria_list"><p class="empty">Checks compare the outcome with source documents and saved records.</p></div></section>
+    <section class="panel outcome-panel" id="outcome_panel"><div class="panel-heading"><h2>Outcome</h2><span id="outcome_label" class="eyebrow">No result yet</span></div><div id="final_report"><p class="empty">The final result, evidence and usage will appear here.</p></div></section>
+  </aside>
+  <div class="main-column">
+    <section class="panel workspace-panel"><div class="workspace-heading"><div><h2>Company workspace</h2><p id="workspace_description">Browse the apps and their saved records.</p></div><div class="view-switch" aria-label="Workspace view"><button id="apps_view_btn" aria-pressed="true" onclick="setWorkspaceView(false)">Apps</button><button id="toggle_view_btn" aria-pressed="false" onclick="toggleScreenshotView()">Agent browser</button></div></div><nav class="workspace-tabs" aria-label="Company applications"><button class="ws-tab active" id="tab_btn_finance" onclick="switchWsTab('/workspace/finance',this)">Finance</button><button class="ws-tab" id="tab_btn_crm" onclick="switchWsTab('/workspace/crm',this)">CRM</button><button class="ws-tab" id="tab_btn_support" onclick="switchWsTab('/workspace/support',this)">Support</button><button class="ws-tab" id="tab_btn_documents" onclick="switchWsTab('/workspace/documents',this)">Documents</button><button id="follow_agent" class="follow-btn" aria-pressed="true" onclick="toggleFollowAgent()">Follow agent ✓</button></nav><div class="iframe-container"><iframe id="ws_iframe" class="ws-frame" src="/workspace/finance" title="Company workspace"></iframe><div id="screenshot_view" class="screenshot-view"><p id="screenshot_empty" class="screenshot-empty">The agent's latest browser capture will appear after a browser action.</p><img id="agent_screenshot" alt="Latest captured agent browser view" hidden></div></div><p id="workspace_caption" class="workspace-caption">Workspace ready · no task started</p></section>
+    <section class="panel"><div class="panel-heading timeline-heading"><h2>Execution timeline</h2><span id="event_count" class="event-count">0 events</span><div class="timeline-controls"><button class="btn" id="timeline_mode" aria-pressed="false" onclick="toggleTimelineMode()">Show all events</button><button class="btn" id="follow_timeline" aria-pressed="true" onclick="toggleTimelineFollow()">Following latest</button></div></div><div id="timeline_stream" class="timeline-stream" role="log" aria-label="Execution timeline"><p class="timeline-empty">Start a task to see its decisions, actions and outcomes.</p></div></section>
+  </div>
+</main>
+<div id="notice" class="notice" role="status" hidden></div>
+<script>
 const el = id => document.getElementById(id);
-function node(tag, text, cls) { const n = document.createElement(tag); n.textContent = text; if (cls) n.className = cls; return n; }
-function setPreset(num) { if(num === 3) { el('objective_input').value = "Analyze sales.csv and identify the region with the largest absolute revenue decline between 2026-08 and 2026-09, including the calculated decline."; return; } el('objective_input').value = num === 1 ? "Find the latest invoice from Acme Corp, extract the amount and due date, enter it into Finance, and verify that it was recorded correctly." : "Read complaint 4821, identify the customer, check their CRM account, and if they are an Enterprise customer, create a high-priority support ticket summarizing the complaint."; }
-async function post(url, body) { const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:body ? JSON.stringify(body) : undefined}); const data = await r.json(); if (!r.ok) throw new Error(data.error || data.detail || 'Request failed'); return data; }
-async function resetEnvironment() { try { await post('/api/workspace/reset'); reloadWorkspaceIframe(); } catch(e) { alert(e.message); } }
-async function armFault503() { try { await post('/api/workspace/fault-injection', {target:'finance_create_invoice', count:1}); el('btn_arm_fault').textContent = '503 armed'; } catch(e) { alert(e.message); } }
-function switchWsTab(url, btn) { showingScreenshot=false; el('screenshot_view').style.display='none'; el('ws_iframe').style.display='block'; document.querySelectorAll('.ws-tab').forEach(n => n.classList.remove('active')); btn.classList.add('active'); el('ws_iframe').src=url; }
-function toggleScreenshotView() { showingScreenshot=!showingScreenshot; el('screenshot_view').style.display=showingScreenshot?'flex':'none'; el('ws_iframe').style.display=showingScreenshot?'none':'block'; el('toggle_view_btn').textContent=showingScreenshot?'View Live Apps':'View Agent Screenshot'; if(showingScreenshot) updateScreenshot(); }
-function updateScreenshot() { if(currentRunId) el('agent_screenshot').src='/api/runs/'+encodeURIComponent(currentRunId)+'/screenshot?t='+Date.now(); }
-function reloadWorkspaceIframe() { el('ws_iframe').src=el('ws_iframe').src; }
-function updateStatus(status) { el('system_status').textContent=status; el('system_status').className='status-badge status-'+status.toLowerCase(); }
-async function startRun() { const objective=el('objective_input').value.trim(); if(!objective) return; el('btn_execute').disabled=true; eventCounter=0; ['timeline_stream','memory_grid','criteria_list','task_graph','final_report'].forEach(id=>el(id).replaceChildren()); el('verif_status').textContent='NOT STARTED'; updateStatus('PLANNING'); try { const data=await post('/api/runs',{objective}); currentRunId=data.run_id; connectSSE(currentRunId); } catch(e) { updateStatus('FAILED'); el('btn_execute').disabled=false; alert(e.message); } }
-function connectSSE(runId) { if(eventSource) eventSource.close(); eventSource=new EventSource('/api/runs/'+encodeURIComponent(runId)+'/stream'); eventSource.onmessage=e=>handleEvent(JSON.parse(e.data)); }
-function handleEvent(evt) { eventCounter++; el('event_count').textContent=eventCounter+' events'; const type=evt.event_type, p=evt.payload;
-if(type==='MEMORY_UPDATE') { renderMemory(p); return; }
-if(type==='PLAN') updateStatus('RUNNING');
-if(type==='TASK_GRAPH') renderTasks(p.tasks || []);
-if(type==='FINAL_REPORT') renderReport(p);
-if(type==='VERIFICATION_REQUESTED') updateStatus('VERIFYING');
-if(type==='RETRY') updateStatus('RUNNING');
-if(type==='VERIFICATION') renderVerification(p);
-if(['COMPLETE','FAILURE','CLARIFICATION_NEEDED','STREAM_END'].includes(type)) { updateStatus(type==='COMPLETE'?'COMPLETED':type==='CLARIFICATION_NEEDED'?'WAITING_FOR_CLARIFICATION':type==='FAILURE'?'FAILED':p.status.toUpperCase()); el('btn_execute').disabled=false; if(type==='STREAM_END' && eventSource) eventSource.close(); }
-const item=node('div','', 'timeline-item'); const header=node('div',type+' · '+new Date(evt.timestamp).toLocaleTimeString(),'timeline-header'); item.append(header,node('pre',JSON.stringify(p,null,2),'timeline-body')); el('timeline_stream').append(item); el('timeline_stream').scrollTop=el('timeline_stream').scrollHeight;
-if(type==='OBSERVATION'||type==='COMPLETE') { reloadWorkspaceIframe(); if(showingScreenshot) updateScreenshot(); }
+const terminalStates = new Set(['completed','failed','waiting_for_clarification','interrupted']);
+const statusLabels = {idle:'Ready',planning:'Planning',running:'Working',verifying:'Verifying',completed:'Completed',failed:'Failed',waiting_for_clarification:'Needs clarification',needs_clarification:'Needs clarification',pending:'Queued',blocked:'Blocked',interrupted:'Interrupted'};
+let currentRunId = null, eventSource = null, showingScreenshot = false, followingAgent = true;
+let eventCounter = 0, decisions = 0, actions = 0, runStartedAt = null, clock = null, active = false;
+let allEvents = false, followingTimeline = true, screenshotReady = false, noticeTimer = null;
+let verificationBlocked = false;
+const events = [], steps = new Map(), controlLabels = new Map(), receivedIds = new Set();
+function node(tag, text = '', cls = '') { const n = document.createElement(tag); n.textContent = text; if (cls) n.className = cls; return n; }
+function humanise(value) { return String(value ?? '').replace(/^@/,'').replace(/[_-]+/g,' ').replace(/^\w/,c=>c.toUpperCase()); }
+function statusLabel(status) { const value=String(status).toLowerCase(); if(verificationBlocked && ['failed','waiting_for_clarification','needs_clarification'].includes(value)) return 'Verification blocked'; return statusLabels[value] || humanise(status); }
+function interpretationFailure(value) { return value?.evidence?.verification_result?.context?.interpretation_failure || value?.context?.interpretation_failure || value?.evidence?.interpretation_failure; }
+function storageGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
+function storageSet(key,value) { try { if(value === null) localStorage.removeItem(key); else localStorage.setItem(key,value); } catch {} }
+function rawDetails(value,label='Details') { const details=node('details','','details'); details.append(node('summary',label),node('pre',JSON.stringify(value,null,2),'raw')); return details; }
+function notify(message) { el('notice').textContent=message; el('notice').hidden=false; clearTimeout(noticeTimer); noticeTimer=setTimeout(()=>el('notice').hidden=true,5000); }
+function setTheme(theme) { document.documentElement.dataset.theme=theme; storageSet('taskflow.theme',theme); const label=theme==='dark'?'Switch to light mode':'Switch to dark mode'; el('theme_toggle').setAttribute('aria-label',label); el('theme_toggle').title=label; applyWorkspaceTheme(); syncBrowserTheme(); }
+el('theme_toggle').addEventListener('click',()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
+function applyWorkspaceTheme() {
+  const doc = el('ws_iframe').contentDocument;
+  if (!doc || !doc.body) return;
+  doc.body.classList.add('workspace-embedded');
+  doc.defaultView.TaskFlowTheme?.set(document.documentElement.dataset.theme);
+  const pathname = doc.location.pathname;
+  document.querySelectorAll('.ws-tab').forEach(btn => btn.classList.toggle('active',
+    pathname === '/workspace/' + btn.id.replace('tab_btn_', '')));
 }
-function renderMemory(mem) { const grid=el('memory_grid'); grid.replaceChildren(); const facts=mem.sources||{}; el('memory_count').textContent=Object.keys(facts).length+' sources'; for(const [key,value] of Object.entries(facts)) { const box=node('div','','fact-box'); box.append(node('div',key,'fact-key'),node('pre',JSON.stringify(value,null,2),'fact-val')); grid.append(box); } }
-function renderVerification(v) { v = v.evidence?.verification_result || v; el('verif_status').textContent=v.verified?'PASSED':'FAILED'; const list=el('criteria_list'); list.replaceChildren(); list.append(node('p',v.summary)); if(v.evidence && !v.criteria_results) list.append(node('pre',JSON.stringify(v.evidence,null,2))); for(const c of v.criteria_results||[]) { const row=node('div','','criterion-row'); row.append(node('strong',c.criterion+' — '+(c.passed?'PASSED':'FAILED')),node('pre',JSON.stringify(c.evidence,null,2))); if(c.discrepancy) row.append(node('p',c.discrepancy)); list.append(row); } }
-function renderTasks(tasks) { const box=el('task_graph'); box.replaceChildren(); for(const task of tasks) { const row=node('div','','criterion-row'); row.append(node('strong',task.status+' · '+task.goal),node('p','Verification: '+task.verification_capability+(task.dependencies.length?' · Depends on '+task.dependencies.join(', '):''))); const latest=task.errors?.at(-1); if(latest) row.append(node('p',latest.error)); box.append(row); } }
-function renderReport(report) { const box=el('final_report'); box.replaceChildren(); box.append(node('strong',report.status.toUpperCase()),node('p',report.duration_seconds+' seconds · '+report.steps+' decisions')); if(report.error || report.question) box.append(node('p',report.error || report.question)); if(report.usage) { const usage=report.usage; box.append(node('p',usage.requests+' API requests · '+(usage.prompt_tokens+usage.completion_tokens)+' reported tokens'+(usage.incomplete?' (partial accounting)':''))); } for(const task of report.tasks || []) { if(task.result?.metrics) box.append(node('pre',JSON.stringify(task.result.metrics,null,2))); } for(const artifact of report.artifacts || []) { if(!artifact.reference.startsWith('/api/runs/')) continue; const link=node('a','Download '+artifact.name); link.href=artifact.reference; link.style.display='block'; box.append(link); } if(report.verification) renderVerification(report.verification); else el('verif_status').textContent='NOT VERIFIED'; }
-setPreset(1);
-    </script>
+async function syncBrowserTheme() {
+  try {
+    await post('/api/ui/theme', {theme: document.documentElement.dataset.theme});
+  } catch (error) {
+    notify('Browser theme could not be synchronized: ' + error.message);
+  }
+}
+el('ws_iframe').addEventListener('load',applyWorkspaceTheme);
+function setPreset(num) { const examples=["Find the latest invoice from Acme Corp, extract the amount and due date, enter it into Finance, and verify that it was recorded correctly.","Read complaint 4821, identify the customer, check their CRM account, and if they are an Enterprise customer, create a high-priority support ticket summarizing the complaint.","Analyze sales.csv and identify the region with the largest absolute revenue decline between 2026-08 and 2026-09, including the calculated decline."]; el('objective_input').value=examples[num-1]||''; updateRunButton(); el('objective_input').focus(); }
+function updateRunButton() { el('btn_execute').disabled=active || !el('objective_input').value.trim(); el('run_button_label').textContent=active?'Task in progress':'Start task'; }
+el('objective_input').addEventListener('input',updateRunButton);
+async function post(url,body) { const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined}); const data=await response.json(); if(!response.ok) throw new Error(typeof data.detail==='string'?data.detail:data.error||'Request failed'); return data; }
+async function resetEnvironment() { try { await post('/api/workspace/reset'); clearPresentation(); currentRunId=null; storageSet('taskflow.run',null); reloadWorkspaceIframe(); el('btn_arm_fault').textContent='Test one failed submit'; notify('Workspace reset.'); } catch(error) { notify(error.message); } }
+async function armFault503() { try { await post('/api/workspace/fault-injection',{target:'finance_create_invoice',count:1}); el('btn_arm_fault').textContent='Recovery test armed'; notify('Next Finance submit will fail once before saving.'); } catch(error) { notify(error.message); } }
+function switchWsTab(url,button) { followingAgent=false; updateFollowAgent(); setWorkspaceView(false); document.querySelectorAll('.ws-tab').forEach(b=>b.classList.toggle('active',b===button)); el('ws_iframe').src=url; }
+function updateFollowAgent() { el('follow_agent').setAttribute('aria-pressed',String(followingAgent)); el('follow_agent').textContent=followingAgent?'Follow agent ✓':'Follow agent'; }
+function toggleFollowAgent() { followingAgent=!followingAgent; updateFollowAgent(); }
+function setWorkspaceView(screenshot) { showingScreenshot=screenshot; el('screenshot_view').style.display=screenshot?'flex':'none'; el('ws_iframe').style.display=screenshot?'none':'block'; el('apps_view_btn').setAttribute('aria-pressed',String(!screenshot)); el('toggle_view_btn').setAttribute('aria-pressed',String(screenshot)); el('workspace_description').textContent=screenshot?'Saved browser capture. Colors reflect when it was taken.':'Browse the apps and their saved records.'; if(screenshot) updateScreenshot(); }
+function toggleScreenshotView() { setWorkspaceView(!showingScreenshot); }
+function updateScreenshot() { if(currentRunId && screenshotReady) { el('agent_screenshot').src='/api/runs/'+encodeURIComponent(currentRunId)+'/screenshot?t='+Date.now(); } }
+el('agent_screenshot').addEventListener('load',()=>{el('agent_screenshot').hidden=false; el('screenshot_empty').hidden=true;});
+el('agent_screenshot').addEventListener('error',()=>{el('agent_screenshot').hidden=true; el('screenshot_empty').hidden=false; el('screenshot_empty').textContent='A browser capture is not available yet.';});
+function reloadWorkspaceIframe() { el('ws_iframe').src=el('ws_iframe').src; }
+function showObservedPage(observation) {
+  const inspected=observation.data?.inspection;
+  if(inspected) for(const control of inspected.interactive_elements||[]) controlLabels.set(control.id,control.label||humanise(control.id));
+  const url=observation.evidence?.url || inspected?.url;
+  if(url) { try { const parsed=new URL(url,location.origin); el('workspace_caption').textContent='Agent viewed '+parsed.pathname+(observation.step?' · step '+observation.step:''); if(followingAgent && parsed.origin===location.origin && parsed.pathname.startsWith('/workspace/')) { const pagePath=parsed.pathname.replace(/^\/workspace\/(finance|support)\/submit$/, '/workspace/$1'); const displayed=new URL(el('ws_iframe').src); if(displayed.pathname!==pagePath || displayed.search!==parsed.search) el('ws_iframe').src=pagePath+parsed.search; else if(observation.data?.outcome==='confirmed_mutation') reloadWorkspaceIframe(); } } catch {} }
+  if(observation.evidence?.screenshot) { screenshotReady=true; if(showingScreenshot) updateScreenshot(); }
+  if(observation.evidence?.http_status===503 && observation.evidence?.commit_state==='not_committed') el('btn_arm_fault').textContent='Test one failed submit';
+}
+function updateStatus(status) { const value=String(status).toLowerCase(); el('system_status').textContent=statusLabel(value); el('system_status').className='status-badge status-'+value; el('progress_label').textContent=statusLabel(value); active=['planning','running','verifying'].includes(value); el('btn_arm_fault').disabled=active; el('btn_reset').disabled=active; updateRunButton(); if(!active) stopClock(); }
+function renderProvider(metadata) { if(!metadata?.model) return; const provider=String(metadata.provider||'').replace(/Provider$/,''); el('model_label').textContent=(provider?humanise(provider)+' · ':'')+metadata.model; }
+function tickClock() { if(runStartedAt) { const seconds=Math.max(0,Math.floor((Date.now()-runStartedAt)/1000)); el('elapsed_time').textContent=seconds<60?seconds+'s':Math.floor(seconds/60)+'m '+String(seconds%60).padStart(2,'0')+'s'; } }
+function stopClock() { if(clock) clearInterval(clock); clock=null; }
+function clearPresentation() { verificationBlocked=false; stopClock(); if(eventSource) eventSource.close(); eventSource=null; events.length=0; steps.clear(); controlLabels.clear(); receivedIds.clear(); eventCounter=decisions=actions=0; runStartedAt=null; screenshotReady=false; el('agent_screenshot').hidden=true; el('agent_screenshot').removeAttribute('src'); el('screenshot_empty').hidden=false; el('screenshot_empty').textContent="The agent's latest browser capture will appear after a browser action."; for(const id of ['timeline_stream','memory_grid','criteria_list','task_graph','final_report']) el(id).replaceChildren(); el('timeline_stream').append(node('p','Waiting for the first event…','timeline-empty')); el('task_graph').append(node('p','Waiting for a plan…','empty')); el('final_report').append(node('p','The result will appear when the run stops.','empty')); el('verif_status').textContent='Not started'; el('outcome_label').textContent='No result yet'; el('outcome_panel').dataset.result=''; el('model_label').textContent='Provider not yet reported'; el('event_count').textContent='0 events'; el('decision_count').textContent='0'; el('action_count').textContent='0'; el('elapsed_time').textContent='—'; el('memory_count').textContent='0 sources'; el('workspace_caption').textContent='Workspace ready'; el('activity_text').textContent='Waiting for the first decision…'; updateStatus('idle'); }
+async function startRun() { const objective=el('objective_input').value.trim(); if(!objective || active) return; clearPresentation(); currentRunId=null; storageSet('taskflow.run',null); updateStatus('planning'); runStartedAt=Date.now(); clock=setInterval(tickClock,1000); try { const data=await post('/api/runs',{objective}); currentRunId=data.run_id; storageSet('taskflow.run',currentRunId); connectSSE(currentRunId); } catch(error) { updateStatus('failed'); el('activity_text').textContent=error.message; el('final_report').replaceChildren(node('p',error.message,'report-message')); notify(error.message); } }
+function connectSSE(runId) { if(eventSource) eventSource.close(); eventSource=new EventSource('/api/runs/'+encodeURIComponent(runId)+'/stream'); eventSource.onmessage=event=>{try{handleEvent(JSON.parse(event.data));}catch{notify('An event could not be displayed.');}}; eventSource.onerror=()=>{if(active) el('activity_text').textContent='Reconnecting to the run event stream…';}; }
+function timeLabel(timestamp) { const date=new Date(timestamp); return Number.isNaN(date.getTime())?'':date.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+function actionTitle(tool,args={}) { const field=controlLabels.get(args.element_id)||humanise(args.element_id||'control'); const file=args.document_id||args.query||''; if(tool==='browser_open') { let path=args.url||'';try{path=new URL(path,location.origin).pathname;}catch{} return 'Open '+path; } if(tool==='browser_type') return 'Fill '+field; if(tool==='browser_select') return 'Select '+field; if(tool==='browser_click') return 'Click '+field; if(tool==='browser_back') return 'Go back'; if(tool==='browser_inspect') return 'Inspect current page'; if(tool==='read_document_chunks') return 'Read '+file; if(tool==='inspect_file') return 'Inspect '+file; if(tool==='search_documents'||tool==='document_search') return 'Search documents'+(file?' · '+file:''); if(tool==='profile_dataset') return 'Profile '+file; if(tool==='execute_python') return 'Run local Python analysis'; return humanise(tool||'Decision'); }
+function eventTitle(type) { return {TASK:'Objective received',MODEL_CALL:'Plan model response',PLAN:'Plan created',TASK_GRAPH:'Task progress updated',MEMORY_UPDATE:'Evidence retained',VERIFICATION_REQUESTED:'Independent verification started',VERIFICATION_CHECKPOINT:'Saved change sent for verification',VERIFICATION:'Verification result',RETRY:'Recovery feedback',OSCILLATION_DETECTED:'Repeated actions interrupted',PYTHON_RESULT_BINDING:'Full analysis result retained',PYTHON_RESULT_DIAGNOSTIC:'Analysis result checked',COMPLETE:'Task completed',FAILURE:'Run stopped',CLARIFICATION_NEEDED:'Clarification needed',FINAL_REPORT:'Final outcome',STREAM_END:'Event stream finished'}[type]||humanise(type); }
+function eventSummary(type,p) { if(type==='PLAN') return (p.tasks?.length||0)+' planned '+(p.tasks?.length===1?'outcome':'outcomes'); if(type==='TASK') return p.objective||''; if(type==='VERIFICATION') return p.summary||p.evidence?.verification_result?.summary||''; if(type==='FINAL_REPORT') return p.error||p.question||statusLabel(p.status); if(type==='FAILURE'||type==='CLARIFICATION_NEEDED') return p.error||p.question||p.summary||''; if(type==='MODEL_CALL') return p.metadata?.model||p.model||''; if(type==='VERIFICATION_CHECKPOINT') return 'The saved state will be checked before further action.'; if(type==='MEMORY_UPDATE') return Object.keys(p.sources||{}).length+' retained sources'; if(type==='OSCILLATION_DETECTED') return p.error||p.summary||'A repeated state cycle was detected.'; return ''; }
+function appendEventCard(evt) { const p=evt.payload||{},item=node('div','','timeline-item'); item.append(node('span','·','step-number')); const heading=node('div','','timeline-header'); heading.append(node('span',eventTitle(evt.event_type),'timeline-title'),node('time',timeLabel(evt.timestamp),'timeline-time')); item.append(heading); const summary=eventSummary(evt.event_type,p); if(summary) item.append(node('p',summary,'timeline-body')); item.append(rawDetails(p)); el('timeline_stream').append(item); }
+function renderStep(step) { const p=step.decision?.payload,decision=p?.decision||{}; const action=step.action?.payload; const observation=step.observation?.payload; const tool=action?.tool||decision.tool_name; const args=action?.args||decision.tool_args||{}; const item=step.element; item.replaceChildren(); item.className='timeline-item timeline-step'+(observation?(observation.ok?' step-success':' step-failed'):''); item.append(node('span',String(step.number),'step-number')); const heading=node('div','','timeline-header'); heading.append(node('span',actionTitle(tool,args),'timeline-title'),node('time',timeLabel((step.action||step.decision||step.observation).timestamp),'timeline-time')); item.append(heading); if(decision.thought) item.append(node('p',decision.thought,'timeline-body')); if(decision.action==='ready_for_verification') heading.firstChild.textContent='Ready for independent verification'; if(decision.action==='need_clarification') heading.firstChild.textContent='Clarification requested'; if(tool==='browser_type' && args.text!=null) item.append(node('p','Value: '+String(args.text).slice(0,240)+(String(args.text).length>240?'…':''),'timeline-body')); if(tool==='browser_select') item.append(node('p','Selection: '+String(args.value??args.label??''),'timeline-body')); if(observation) { const text=observation.ok?(observation.data?.success_message||'Action completed'):(observation.error||'Action did not complete'); const result=node('p',text,'step-outcome '+(observation.ok?'success':'error')); item.append(result); if(!action) { heading.firstChild.textContent='Not executed · '+actionTitle(tool,args); item.append(node('p','No tool action executed.','event-tag')); } if(observation.retriable) item.append(node('p','Reported as safe to retry.','event-tag')); } else item.append(node('p',action?'Tool action dispatched':'Decision received','event-tag')); item.append(rawDetails({decision:decision,action:action||null,observation:observation||null},'Step details')); }
+function appendTimeline(evt) { const type=evt.event_type,p=evt.payload||{}; if(allEvents) { appendEventCard(evt);return; } if(['DECISION','ACTION','OBSERVATION'].includes(type) && p.step!=null) { const key=(p.task_id||'task')+':'+p.step; let step=steps.get(key); if(!step) { step={number:p.step,element:node('div')}; steps.set(key,step); el('timeline_stream').append(step.element); } step[{DECISION:'decision',ACTION:'action',OBSERVATION:'observation'}[type]]=evt;renderStep(step); } else if(!['TASK_GRAPH','MEMORY_UPDATE','MODEL_CALL','STREAM_END','PYTHON_RESULT_DIAGNOSTIC'].includes(type)) appendEventCard(evt); }
+function rebuildTimeline() { const stream=el('timeline_stream'); stream.replaceChildren(); steps.clear(); for(const evt of events) appendTimeline(evt); if(!events.length) stream.append(node('p','Start a task to see its decisions, actions and outcomes.','timeline-empty')); if(followingTimeline) stream.scrollTop=stream.scrollHeight; }
+function toggleTimelineMode() { allEvents=!allEvents; el('timeline_mode').textContent=allEvents?'Show steps':'Show all events';el('timeline_mode').setAttribute('aria-pressed',String(allEvents));rebuildTimeline(); }
+function toggleTimelineFollow() { followingTimeline=!followingTimeline; el('follow_timeline').textContent=followingTimeline?'Following latest':'Follow latest';el('follow_timeline').setAttribute('aria-pressed',String(followingTimeline));if(followingTimeline) el('timeline_stream').scrollTop=el('timeline_stream').scrollHeight; }
+el('timeline_stream').addEventListener('scroll',()=>{const stream=el('timeline_stream');if(followingTimeline && stream.scrollHeight-stream.scrollTop-stream.clientHeight>70) {followingTimeline=false;el('follow_timeline').textContent='Follow latest';el('follow_timeline').setAttribute('aria-pressed','false');}});
+function handleEvent(evt) { if(evt.id && receivedIds.has(evt.id)) return; if(evt.id) receivedIds.add(evt.id); const type=evt.event_type,p=evt.payload||{}; const stream=el('timeline_stream'),wasNearBottom=stream.scrollHeight-stream.scrollTop-stream.clientHeight<70; if(!events.length) stream.replaceChildren(); events.push(evt); eventCounter++;el('event_count').textContent=eventCounter+' '+(eventCounter===1?'event':'events'); if(type==='TASK') { if(!runStartedAt && evt.timestamp) runStartedAt=new Date(evt.timestamp).getTime(); } if(type==='MODEL_CALL') renderProvider(p.metadata||p); if(type==='PLAN') { updateStatus('running'); el('activity_text').textContent='Plan ready. Working through the objective.'; } if(type==='DECISION') { decisions++;el('decision_count').textContent=decisions;renderProvider(p.model_metadata);el('activity_text').textContent=p.decision?.thought||'A decision was received.'; } if(type==='ACTION') { actions++;el('action_count').textContent=actions;el('activity_text').textContent=actionTitle(p.tool,p.args); } if(type==='OBSERVATION') { showObservedPage(p); el('activity_text').textContent=p.ok?(p.data?.success_message||'Action complete. Waiting for the next decision.'):(p.error||'Action failed. Awaiting the next decision.'); } if(type==='MEMORY_UPDATE') renderMemory(p); if(type==='TASK_GRAPH') renderTasks(p.tasks||[]); if(type==='VERIFICATION_REQUESTED'||type==='VERIFICATION_CHECKPOINT') {updateStatus('verifying');el('activity_text').textContent='Checking the result against independent evidence.';} if(type==='RETRY') updateStatus('running'); if(type==='VERIFICATION') renderVerification(p); if(type==='FINAL_REPORT') renderReport(p); if(['COMPLETE','FAILURE','CLARIFICATION_NEEDED','STREAM_END'].includes(type)) { const status=type==='COMPLETE'?'completed':type==='FAILURE'?'failed':type==='CLARIFICATION_NEEDED'?'waiting_for_clarification':p.status||'interrupted'; updateStatus(status);if(type==='STREAM_END' && eventSource) {eventSource.close();eventSource=null;} } appendTimeline(evt); if(followingTimeline && wasNearBottom) stream.scrollTop=stream.scrollHeight; }
+function renderMemory(memory) {
+  const grid = el('memory_grid');
+  grid.replaceChildren();
+  const sources = memory.sources || {}, excerpts = memory.source_excerpts || {};
+  const entries = new Map();
+  for (const key of new Set([...Object.keys(sources), ...Object.keys(excerpts)])) {
+    const data = sources[key] || excerpts[key];
+    const chunks = Object.values(data.chunks || {});
+    entries.set(key, {data, summary: chunks[0]?.text || data.text || data.excerpt || 'Source observation retained'});
+  }
+  for (const [key, profile] of Object.entries(memory.dataset_profiles || {})) {
+    entries.set(key, {data: profile, summary: (profile.shape?.[0] ?? '?') + ' rows · ' + (profile.shape?.[1] ?? '?') + ' columns · local dataset profile'});
+  }
+  for (const [url, page] of Object.entries(memory.pages || {})) {
+    if (!page.tables?.length || entries.has(url)) continue;
+    const rows = page.tables.reduce((count, table) => count + Math.max(0, table.length - 1), 0);
+    entries.set(url, {data: {url, tables: page.tables}, summary: page.tables.length + ' observed tables · ' + rows + ' rows'});
+  }
+  el('memory_count').textContent = entries.size + ' ' + (entries.size === 1 ? 'source' : 'sources');
+  for (const [key, entry] of entries) {
+    const box = node('div', '', 'fact-box');
+    box.append(node('div', key, 'fact-key'));
+    const text = String(entry.summary);
+    box.append(node('p', text.slice(0, 260) + (text.length > 260 ? '…' : ''), 'fact-val'));
+    box.append(rawDetails(entry.data, 'Source details'));
+    grid.append(box);
+  }
+  if (!entries.size) grid.append(node('p', 'No source observations retained yet.', 'empty'));
+}
+function calculationProof(value) {
+  const evidence=value.evidence||{}, expected=evidence.expected, contract=evidence.contract;
+  if(!expected || !contract || !evidence.actual) return null;
+  const proof=node('section','','calculation-proof');
+  proof.append(node('h3','Independent calculation'));
+  proof.append(node('p',contract.document_id+' · '+Number(expected.full_dataset_rows).toLocaleString()+' rows checked · '+expected.groups_compared+' groups','hint'));
+  const formula=contract.measure==='value'?humanise(contract.aggregate)+' of '+contract.value_column:
+    (contract.convention==='baseline_minus_current'?contract.baseline_period+' minus '+contract.current_period:contract.current_period+' minus '+contract.baseline_period)+(contract.measure==='percent_change'?' · percent of baseline':'');
+  proof.append(node('p',formula,'report-meta'));
+  const actual=evidence.actual;
+  const result=node('div','','metrics');
+  for(const [label,group,value] of [['Execution result',actual[contract.group_metric],actual[contract.value_metric]],['Independent result',expected.group,expected.value]]) {
+    const card=node('div','','metric');
+    card.append(node('small',label),node('strong',String(group)+' · '+(typeof value==='number'?value.toLocaleString():String(value))));result.append(card);
+  }
+  proof.append(result,node('p',value.verified?'Execution matches the independent calculation.':'Execution has not passed the independent calculation.',value.verified?'criterion-result pass':'criterion-result fail'));
+  const values=Object.entries(expected.group_values_preview||{});
+  if(values.length) {
+    const table=node('table','','comparison-table'), head=node('thead'), header=node('tr');
+    header.append(node('th',humanise(contract.group_column)),node('th',humanise(contract.measure)));
+    head.append(header);table.append(head);const body=node('tbody');
+    for(const [group,measure] of values) {
+      const row=node('tr');if(group===expected.group) row.classList.add('selected-result');
+      row.append(node('td',group),node('td',typeof measure==='number'?measure.toLocaleString():String(measure)));body.append(row);
+    }
+    table.append(body);proof.append(table);
+    if(expected.groups_compared>values.length) proof.append(node('p','Showing '+values.length+' of '+expected.groups_compared+' groups. The check used every group.','hint'));
+  }
+  return proof;
+}
+function renderVerification(value) { verificationBlocked=interpretationFailure(value)?.origin==='verifier_interpretation'; const v=value.evidence?.verification_result||value;const hasVerdict=typeof v.verified==='boolean';el('verif_status').textContent=verificationBlocked?'Blocked':hasVerdict?(v.verified?'Passed':'Not verified'):'Checking';const list=el('criteria_list');list.replaceChildren();const proof=calculationProof(value);if(proof) list.append(proof);if(v.summary) list.append(node('p',v.summary,'report-message'));for(const criterion of v.criteria_results||[]) {const row=node('div','','criterion'),heading=node('div','','criterion-title');heading.append(node('span',criterion.criterion),node('span',criterion.passed?'Passed':'Not met','criterion-result '+(criterion.passed?'pass':'fail')));row.append(heading);if(criterion.discrepancy) row.append(node('p',criterion.discrepancy));if(criterion.evidence) row.append(rawDetails(criterion.evidence,'Evidence'));list.append(row);}if(!v.criteria_results?.length && v.evidence) list.append(rawDetails(v.evidence,'Verification evidence')); }
+function renderTasks(tasks) { const box=el('task_graph');box.replaceChildren();for(const task of tasks) {const row=node('div','','task'),heading=node('div','','task-top');heading.append(node('p',task.goal,'task-goal'),node('span',statusLabel(task.status),'status-badge status-'+String(task.status).toLowerCase()));row.append(heading);if(task.dependencies?.length) row.append(node('p','Depends on '+task.dependencies.join(', '),'hint'));const error=task.errors?.at(-1);if(error) { const recovered=task.status==='COMPLETED' || (['PYTHON_RESULT_ERROR','PYTHON_RUNTIME_ERROR','PYTHON_CONTRACT_ERROR'].includes(error.code) && events.some(evt=>evt.event_type==='OBSERVATION' && evt.payload?.task_id===task.task_id && evt.payload?.step>error.step && evt.payload?.ok && evt.payload?.data?.stage==='full')); if(recovered) row.append(rawDetails(error,'Recovered attempt')); else row.append(node('p',error.error,'task-error')); }box.append(row);}if(!tasks.length) box.append(node('p','No plan was produced.','empty')); }
+function renderReport(report) { verificationBlocked=interpretationFailure(report.verification)?.origin==='verifier_interpretation'; renderProvider(report);updateStatus(report.status||'failed');const box=el('final_report');box.replaceChildren();el('outcome_label').textContent=statusLabel(report.status);el('outcome_panel').dataset.result=report.status;const header=node('div','','report-header');header.append(node('strong',statusLabel(report.status)));box.append(header);const duration=Number(report.duration_seconds);if(Number.isFinite(duration)) el('elapsed_time').textContent=duration.toFixed(1)+'s';box.append(node('p',(Number.isFinite(duration)?duration.toFixed(1)+' seconds · ':'')+(report.steps||0)+' decisions','report-meta'));if(verificationBlocked) box.append(node('p','The verifier could not form a valid checking contract. Saved changes are not undone. This does not mean more information is needed from you.','report-message'));else if(report.status==='waiting_for_clarification') box.append(node('p','A requirement or verification check could not be resolved.','report-message'));if(report.error||report.question) box.append(node('p',report.error||report.question,'report-message'));el('activity_text').textContent=report.error||report.question||(report.status==='completed'?'The outcome passed independent verification.':'Run finished.');if(report.status==='waiting_for_clarification' && !verificationBlocked) {const edit=node('button','Edit objective','btn');edit.onclick=()=>el('objective_input').focus();box.append(edit,node('p','Start a new run after resolving the issue. Existing writes are not undone.','hint'));}if(report.usage) {const usage=report.usage,total=usage.total_tokens??((usage.prompt_tokens||0)+(usage.completion_tokens||0));box.append(node('p',(usage.requests||0)+' API requests · '+Number(total).toLocaleString()+' reported tokens'+(usage.incomplete?' · usage incomplete':''),'report-meta'));}for(const task of report.tasks||[]) {if(task.result?.metrics) {const metrics=node('div','','metrics');for(const [key,value] of Object.entries(task.result.metrics)) {const metric=node('div','','metric');metric.append(node('small',humanise(key)),node('strong',typeof value==='number'?value.toLocaleString():String(value)));metrics.append(metric);}box.append(metrics);}}for(const artifact of report.artifacts||[]) {if(!/^\/api\/runs\/[A-Za-z0-9_-]+\/artifacts\//.test(artifact.reference||'')) continue;const link=node('a','Download '+artifact.name,'artifact-link');link.href=artifact.reference;box.append(link);}if(report.verification) renderVerification(report.verification);else el('verif_status').textContent='Not verified'; }
+async function restoreRun() { const saved=storageGet('taskflow.run');if(!saved || !/^[A-Za-z0-9_-]{1,80}$/.test(saved)) return;try {const response=await fetch('/api/runs/'+encodeURIComponent(saved));if(!response.ok) {storageSet('taskflow.run',null);return;}const run=await response.json();clearPresentation();currentRunId=run.run_id;el('objective_input').value=run.objective;runStartedAt=new Date(run.created_at).getTime();for(const evt of run.events||[]) handleEvent(evt);if(run.report) renderReport(run.report);else updateStatus(run.status);if(!terminalStates.has(run.status)) {clock=setInterval(tickClock,1000);connectSSE(currentRunId);}updateRunButton();}catch{notify('The previous run could not be loaded.');} }
+setTheme(window.TaskFlowTheme.get());restoreRun();
+</script>
 </body>
 </html>

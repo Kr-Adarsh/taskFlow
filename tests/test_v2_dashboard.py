@@ -25,10 +25,14 @@ async def test_dashboard_task_graph_final_report_and_safe_text(real_workspace):
                 await page.locator('#objective_input').fill(goal)
                 await page.locator('#btn_execute').click()
                 await page.wait_for_function("document.getElementById('final_report').textContent.includes('Which source should I read?')")
-                assert 'NEEDS_CLARIFICATION' in await page.locator('#task_graph').inner_text()
+                assert 'Needs clarification' in await page.locator('#task_graph').inner_text()
                 assert await page.locator('#task_graph img').count()==0
-                assert await page.locator('#verif_status').inner_text()=='NOT VERIFIED'
+                assert await page.locator('#verif_status').text_content()=='Not verified'
                 assert await page.locator('#btn_execute').is_enabled()
+                await page.reload()
+                await page.wait_for_function("document.getElementById('final_report').textContent.includes('Which source should I read?')")
+                assert await page.locator('#system_status').text_content() == 'Needs clarification'
+                assert await page.locator('#task_graph img').count() == 0
             finally:
                 await browser.close()
     finally:

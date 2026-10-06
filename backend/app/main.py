@@ -45,8 +45,23 @@ app.include_router(runs_router)
 
 from pathlib import Path
 from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, ConfigDict
+from typing import Literal
 
 DASHBOARD_FILE = Path(__file__).resolve().parent / "static" / "dashboard.html"
+app.mount("/static", StaticFiles(directory=DASHBOARD_FILE.parent), name="static")
+
+
+class ThemePreference(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    theme: Literal["light", "dark"]
+
+
+@app.post("/api/ui/theme")
+async def update_browser_theme(preference: ThemePreference):
+    await browser_manager.set_ui_theme(preference.theme)
+    return {"ok": True, "theme": preference.theme}
 
 @app.get("/health")
 def health_check():

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operon - Autonomous AI Task Worker</title>
+    <style>
+        :root {
+            --bg-base: #090d16;
+            --bg-surface: #0f172a;
+            --bg-card: #1e293b;
+            --border-subtle: #334155;
+            --border-focus: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.25);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.25);
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --purple: #a855f7;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Bar */
+        header {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-logo {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #0f172a;
+            font-size: 1.1rem;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+        .brand-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .brand-badge {
+            font-size: 0.7rem;
+            background: #1e3a5f;
+            color: #38bdf8;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #1e293b;
+            border: 1px solid var(--border-subtle);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--success);
+            box-shadow: 0 0 8px var(--success-glow);
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: #334155;
+            color: #cbd5e1;
+        }
+        .status-running { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #38bdf8; animation: pulse 1.5s infinite; }
+        .status-verifying { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid #a855f7; }
+        .status-completed { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; }
+        .status-failed { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid #ef4444; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        button.btn-subtle {
+            background: #1e293b;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-main);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button.btn-subtle:hover {
+            border-color: var(--accent);
+            background: #273549;
+        }
+
+        /* Main Workspace Layout */
+        main {
+            display: grid;
+            grid-template-columns: 480px 1fr;
+            flex: 1;
+            height: calc(100vh - 61px);
+        }
+
+        /* Left Column: Observability & Control */
+        .left-col {
+            background: #0d1322;
+            border-right: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Objective Box */
+        textarea.objective-input {
+            width: 100%;
+            height: 75px;
+            background: #090e1a;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            color: var(--text-main);
+            padding: 10px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: none;
+            outline: none;
+        }
+        textarea.objective-input:focus {
+            border-color: var(--accent);
+        }
+        .preset-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-preset {
+            background: #141e33;
+            border: 1px solid #243452;
+            color: #93c5fd;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .btn-preset:hover {
+            background: #1e3052;
+        }
+        .btn-run {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #ffffff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transition: all 0.2s;
+        }
+        .btn-run:hover {
+            filter: brightness(1.1);
+        }
+        .btn-run:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Working Memory Panel */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .fact-box {
+            background: #0b1120;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid #202d44;
+        }
+        .fact-key {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .fact-val {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Verification Card */
+        .verification-card {
+            border-left: 4px solid #334155;
+            transition: all 0.3s;
+        }
+        .verification-card.verified { border-left-color: var(--success); }
+        .verification-card.failed { border-left-color: var(--danger); }
+        .criterion-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #24344d;
+            font-size: 0.8rem;
+        }
+        .criterion-badge {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .badge-pass { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .badge-fail { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+        /* Execution Timeline */
+        .timeline-card {
+            flex: 1;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+        }
+        .timeline-stream {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 4px;
+        }
+        .timeline-item {
+            background: #0b1120;
+            border: 1px solid #1f2c42;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .timeline-type {
+            font-weight: 700;
+            font-size: 0.75rem;
+            padding: 1px 6px;
+            border-radius: 3px;
+        }
+        .type-PLAN { background: #3b82f6; color: #fff; }
+        .type-ACTION { background: #0284c7; color: #fff; }
+        .type-OBSERVATION { background: #334155; color: #94a3b8; }
+        .type-RETRY { background: #d97706; color: #fff; }
+        .type-ERROR { background: #dc2626; color: #fff; }
+        .type-VERIFICATION { background: #9333ea; color: #fff; }
+        .type-COMPLETE { background: #16a34a; color: #fff; }
+
+        .timeline-body {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: #cbd5e1;
+            word-break: break-all;
+        }
+
+        /* Right Column: Embedded Workspace & Live Preview */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-surface);
+        }
+        .workspace-tabs {
+            background: #090e1a;
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .tab-group {
+            display: flex;
+            gap: 8px;
+        }
+        .ws-tab {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .ws-tab.active {
+            background: #1e293b;
+            color: var(--accent);
+            border-color: var(--border-subtle);
+        }
+        .iframe-container {
+            flex: 1;
+            position: relative;
+            background: #0b1120;
+        }
+        iframe.ws-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .screenshot-view {
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: #050811;
+            padding: 20px;
+        }
+        .screenshot-view img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="brand">
+            <div class="brand-logo">O</div>
+            <div class="brand-title">
+                Operon
+                <span class="brand-badge">Autonomous Worker</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <div class="pill">
+                <span class="dot"></span>
+                <span>Ollama ministral-3:3b</span>
+            </div>
+            <div id="system_status" class="status-badge">IDLE</div>
+            <button class="btn-subtle" id="btn_arm_fault" onclick="armFault503()">Arm 503 Fault</button>
+            <button class="btn-subtle" onclick="resetEnvironment()">Reset Demo</button>
+        </div>
+    </header>
+
+    <!-- Main 2-Column Interface -->
+    <main>
+        <!-- Left Column: Observability & Control -->
+        <div class="left-col">
+            <!-- Objective Input -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Objective Prompt</span>
+                </div>
+                <textarea id="objective_input" class="objective-input" placeholder="Enter natural language objective..."></textarea>
+                <div class="preset-buttons">
+                    <button class="btn-preset" onclick="setPreset(1)">Demo 1: Invoice -> Finance</button>
+                    <button class="btn-preset" onclick="setPreset(2)">Demo 2: Complaint -> Support</button>
+                    <button class="btn-preset" onclick="setPreset(3)">Demo 3: CSV analysis</button>
+                </div>
+                <button class="btn-run" id="btn_execute" onclick="startRun()">Execute Objective</button>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><span class="card-title">Tasks</span></div>
+                <div id="task_graph">Awaiting plan</div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Final evidence</span></div>
+                <div id="final_report">Awaiting verification</div>
+            </div>
+
+            <!-- Working Memory -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Working Memory</span>
+                    <span id="memory_count" style="font-size: 0.75rem; color: var(--text-muted);">0 facts</span>
+                </div>
+                <div class="memory-grid" id="memory_grid">
+                    <div class="fact-box">
+                        <div class="fact-key">Status</div>
+                        <div class="fact-val">Awaiting run</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verification & Evidence -->
+            <div class="card verification-card" id="verification_card">
+                <div class="card-header">
+                    <span class="card-title">Independent Verification</span>
+                    <span id="verif_status" style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">NOT STARTED</span>
+                </div>
+                <div id="criteria_list" style="display: flex; flex-direction: column;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">
+                        Verifier independently validates ground truth upon task completion.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Execution Timeline -->
+            <div class="card timeline-card">
+                <div class="card-header">
+                    <span class="card-title">Execution Timeline</span>
+                    <span id="event_count" style="font-size: 0.75rem; color: var(--text-muted);">0 events</span>
+                </div>
+                <div class="timeline-stream" id="timeline_stream">
+                    <div style="color: var(--text-muted); font-size: 0.8rem; font-style: italic; text-align: center; margin-top: 40px;">
+                        Event stream idle. Enter an objective and click Execute.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Live Workspace Apps & Browser Screenshot -->
+        <div class="right-col">
+            <div class="workspace-tabs">
+                <div class="tab-group">
+                    <button class="ws-tab active" id="tab_btn_finance" onclick="switchWsTab('/workspace/finance', this)">Finance App</button>
+                    <button class="ws-tab" id="tab_btn_crm" onclick="switchWsTab('/workspace/crm', this)">CRM App</button>
+                    <button class="ws-tab" id="tab_btn_support" onclick="switchWsTab('/workspace/support', this)">Support App</button>
+                    <button class="ws-tab" id="tab_btn_documents" onclick="switchWsTab('/workspace/documents', this)">Documents</button>
+                </div>
+                <div>
+                    <button class="btn-subtle" id="toggle_view_btn" onclick="toggleScreenshotView()">View Agent Screenshot</button>
+                </div>
+            </div>
+            <div class="iframe-container">
+                <iframe id="ws_iframe" class="ws-frame" src="/workspace/finance"></iframe>
+                <div id="screenshot_view" class="screenshot-view">
+                    <img id="agent_screenshot" src="" alt="Agent Browser Screenshot" />
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+let currentRunId = null, eventSource = null, showingScreenshot = false, eventCounter = 0;
+const el = id => document.getElementById(id);
+function node(tag, text, cls) { const n = document.createElement(tag); n.textContent = text; if (cls) n.className = cls; return n; }
+function setPreset(num) { if(num === 3) { el('objective_input').value = "Analyze sales.csv and identify the region with the largest absolute revenue decline between 2026-08 and 2026-09, including the calculated decline."; return; } el('objective_input').value = num === 1 ? "Find the latest invoice from Acme Corp, extract the amount and due date, enter it into Finance, and verify that it was recorded correctly." : "Read complaint 4821, identify the customer, check their CRM account, and if they are an Enterprise customer, create a high-priority support ticket summarizing the complaint."; }
+async function post(url, body) { const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:body ? JSON.stringify(body) : undefined}); const data = await r.json(); if (!r.ok) throw new Error(data.error || data.detail || 'Request failed'); return data; }
+async function resetEnvironment() { try { await post('/api/workspace/reset'); reloadWorkspaceIframe(); } catch(e) { alert(e.message); } }
+async function armFault503() { try { await post('/api/workspace/fault-injection', {target:'finance_create_invoice', count:1}); el('btn_arm_fault').textContent = '503 armed'; } catch(e) { alert(e.message); } }
+function switchWsTab(url, btn) { showingScreenshot=false; el('screenshot_view').style.display='none'; el('ws_iframe').style.display='block'; document.querySelectorAll('.ws-tab').forEach(n => n.classList.remove('active')); btn.classList.add('active'); el('ws_iframe').src=url; }
+function toggleScreenshotView() { showingScreenshot=!showingScreenshot; el('screenshot_view').style.display=showingScreenshot?'flex':'none'; el('ws_iframe').style.display=showingScreenshot?'none':'block'; el('toggle_view_btn').textContent=showingScreenshot?'View Live Apps':'View Agent Screenshot'; if(showingScreenshot) updateScreenshot(); }
+function updateScreenshot() { if(currentRunId) el('agent_screenshot').src='/api/runs/'+encodeURIComponent(currentRunId)+'/screenshot?t='+Date.now(); }
+function reloadWorkspaceIframe() { el('ws_iframe').src=el('ws_iframe').src; }
+function updateStatus(status) { el('system_status').textContent=status; el('system_status').className='status-badge status-'+status.toLowerCase(); }
+async function startRun() { const objective=el('objective_input').value.trim(); if(!objective) return; el('btn_execute').disabled=true; eventCounter=0; ['timeline_stream','memory_grid','criteria_list','task_graph','final_report'].forEach(id=>el(id).replaceChildren()); el('verif_status').textContent='NOT STARTED'; updateStatus('PLANNING'); try { const data=await post('/api/runs',{objective}); currentRunId=data.run_id; connectSSE(currentRunId); } catch(e) { updateStatus('FAILED'); el('btn_execute').disabled=false; alert(e.message); } }
+function connectSSE(runId) { if(eventSource) eventSource.close(); eventSource=new EventSource('/api/runs/'+encodeURIComponent(runId)+'/stream'); eventSource.onmessage=e=>handleEvent(JSON.parse(e.data)); }
+function handleEvent(evt) { eventCounter++; el('event_count').textContent=eventCounter+' events'; const type=evt.event_type, p=evt.payload;
+if(type==='MEMORY_UPDATE') { renderMemory(p); return; }
+if(type==='PLAN') updateStatus('RUNNING');
+if(type==='TASK_GRAPH') renderTasks(p.tasks || []);
+if(type==='FINAL_REPORT') renderReport(p);
+if(type==='VERIFICATION_REQUESTED') updateStatus('VERIFYING');
+if(type==='RETRY') updateStatus('RUNNING');
+if(type==='VERIFICATION') renderVerification(p);
+if(['COMPLETE','FAILURE','CLARIFICATION_NEEDED','STREAM_END'].includes(type)) { updateStatus(type==='COMPLETE'?'COMPLETED':type==='CLARIFICATION_NEEDED'?'WAITING_FOR_CLARIFICATION':type==='FAILURE'?'FAILED':p.status.toUpperCase()); el('btn_execute').disabled=false; if(type==='STREAM_END' && eventSource) eventSource.close(); }
+const item=node('div','', 'timeline-item'); const header=node('div',type+' · '+new Date(evt.timestamp).toLocaleTimeString(),'timeline-header'); item.append(header,node('pre',JSON.stringify(p,null,2),'timeline-body')); el('timeline_stream').append(item); el('timeline_stream').scrollTop=el('timeline_stream').scrollHeight;
+if(type==='OBSERVATION'||type==='COMPLETE') { reloadWorkspaceIframe(); if(showingScreenshot) updateScreenshot(); }
+}
+function renderMemory(mem) { const grid=el('memory_grid'); grid.replaceChildren(); const facts=mem.sources||{}; el('memory_count').textContent=Object.keys(facts).length+' sources'; for(const [key,value] of Object.entries(facts)) { const box=node('div','','fact-box'); box.append(node('div',key,'fact-key'),node('pre',JSON.stringify(value,null,2),'fact-val')); grid.append(box); } }
+function renderVerification(v) { v = v.evidence?.verification_result || v; el('verif_status').textContent=v.verified?'PASSED':'FAILED'; const list=el('criteria_list'); list.replaceChildren(); list.append(node('p',v.summary)); if(v.evidence && !v.criteria_results) list.append(node('pre',JSON.stringify(v.evidence,null,2))); for(const c of v.criteria_results||[]) { const row=node('div','','criterion-row'); row.append(node('strong',c.criterion+' — '+(c.passed?'PASSED':'FAILED')),node('pre',JSON.stringify(c.evidence,null,2))); if(c.discrepancy) row.append(node('p',c.discrepancy)); list.append(row); } }
+function renderTasks(tasks) { const box=el('task_graph'); box.replaceChildren(); for(const task of tasks) { const row=node('div','','criterion-row'); row.append(node('strong',task.status+' · '+task.goal),node('p','Verification: '+task.verification_capability+(task.dependencies.length?' · Depends on '+task.dependencies.join(', '):''))); const latest=task.errors?.at(-1); if(latest) row.append(node('p',latest.error)); box.append(row); } }
+function renderReport(report) { const box=el('final_report'); box.replaceChildren(); box.append(node('strong',report.status.toUpperCase()),node('p',report.duration_seconds+' seconds · '+report.steps+' decisions')); if(report.error || report.question) box.append(node('p',report.error || report.question)); if(report.usage) { const usage=report.usage; box.append(node('p',usage.requests+' API requests · '+(usage.prompt_tokens+usage.completion_tokens)+' reported tokens'+(usage.incomplete?' (partial accounting)':''))); } for(const task of report.tasks || []) { if(task.result?.metrics) box.append(node('pre',JSON.stringify(task.result.metrics,null,2))); } for(const artifact of report.artifacts || []) { if(!artifact.reference.startsWith('/api/runs/')) continue; const link=node('a','Download '+artifact.name); link.href=artifact.reference; link.style.display='block'; box.append(link); } if(report.verification) renderVerification(report.verification); else el('verif_status').textContent='NOT VERIFIED'; }
+setPreset(1);
+    </script>
+</body>
+</html>
